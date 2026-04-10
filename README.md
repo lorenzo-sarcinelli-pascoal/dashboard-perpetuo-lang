@@ -20,8 +20,10 @@ O motor interno ainda usa os nomes do export Hubla / `metaads_daily`. Antes de `
 
 | Canônico (motor) | Aba vendas (Lang) | Notas |
 |------------------|-------------------|--------|
-| `_netPrice` / receita | `commision_value_brl` ou `comission_value_brl` | se preenchido, faturamento líquido é esse valor; `payment_price` não entra na receita |
-| `payment_price` | coluna da planilha (sem fallback) | export antigo sem líquido: `_netPrice` = `payment_price` − `commission_plataform` |
+| `_netPrice` / receita | `price_brl` (ou `Price_BRL`) | faturamento líquido do dashboard usa esta coluna; se vazia, `_netPrice` = `payment_price` − `commission_plataform` |
+| `payment_price` | coluna da planilha | usado no fallback quando `price_brl` está vazio |
+| `commision_value_brl` / `comission_value_brl` | (opcional) | podem existir no export; **não** entram mais no cálculo de faturamento líquido do motor |
+| `launch_tag` | `launch_tag`, `LaunchTag`, `Launch Tag`, etc. | normalizado em `normalizeLangVenda`; alimenta o filtro **LaunchTag** na barra do painel |
 | `approved_date` e `order_date` | `update_time` | só quando ambos canônicos vazios; não usa `create_time` |
 | `commission_plataform` | igual | KPI “Taxa plat.” (soma separada) |
 | `utm_*`, `status`, `offer_name` | igual | `utm_source` meta/fb/ig → `Meta_Ads` |

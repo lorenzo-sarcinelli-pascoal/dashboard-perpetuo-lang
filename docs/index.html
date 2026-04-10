@@ -427,6 +427,11 @@
     <span style="color:var(--muted);font-size:12px;">a</span>
     <input type="date" id="filterDateTo" style="min-width:130px;" />
     <div class="filter-sep"></div>
+    <label style="font-size:12px;color:var(--muted);margin-right:4px;">LaunchTag:</label>
+    <select id="filterLaunchTag" style="min-width:160px;max-width:280px;">
+      <option value="">Todos</option>
+    </select>
+    <div class="filter-sep"></div>
     <button class="quick-btn" id="btnToday">Hoje</button>
     <button class="quick-btn" id="btnYesterday">Ontem</button>
     <button class="quick-btn" id="btnLast7">Ultimos 7 dias</button>
@@ -583,7 +588,7 @@ if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
    CONFIG MODULE
    ============================================================ */
 const STORAGE_KEY = 'the_perpetuo_lang_dashboard_config';
-const OFFER_CATEGORIES = ['Produto Principal','Order Bump 1','Order Bump 2','Upsell 1','Downsell 1','Ignorar'];
+const OFFER_CATEGORIES = ['Produto Principal','Order Bump 1','Order Bump 2','Order Bump 3','Order Bump 4','Upsell 1','Upsell 2','Downsell 1','Ignorar'];
 const DEFAULT_OFFER_MAP = {};
 const DEFAULT_SHEET_ID = '1QRlHLwtIVEQSUmbPRcu6Lq_fU7hkS1MZQAv1ZgNIuWY';
 const DEFAULT_VENDAS_SHEET = 'vendas';
@@ -613,7 +618,8 @@ function getConfig() {
     sources: saved.sources || ['Meta_Ads','bio','manychat','hubla'],
     statusFilter: saved.statusFilter || 'paid',
     insightsTargetType: saved.insightsTargetType || 'lucro',
-    insightsTargetValue: saved.insightsTargetValue || '10000'
+    insightsTargetValue: saved.insightsTargetValue || '10000',
+    launchTagFilter: saved.launchTagFilter || ''
   };
 }
 
@@ -657,7 +663,8 @@ function readConfigFromUI() {
     sources,
     statusFilter: $('cfgStatus').value,
     insightsTargetType: $('insightsTargetType').value,
-    insightsTargetValue: $('insightsTargetValue').value
+    insightsTargetValue: $('insightsTargetValue').value,
+    launchTagFilter: $('filterLaunchTag') ? $('filterLaunchTag').value.trim() : ''
   };
 }
 
@@ -741,7 +748,10 @@ function normalizeOfferCategory(rawCategory) {
   if (c === 'produto principal' || c === 'principal') return 'Produto Principal';
   if (c === 'order bump 1' || c === 'ob1' || c === 'orderbump1') return 'Order Bump 1';
   if (c === 'order bump 2' || c === 'ob2' || c === 'orderbump2') return 'Order Bump 2';
+  if (c === 'order bump 3' || c === 'ob3' || c === 'orderbump3') return 'Order Bump 3';
+  if (c === 'order bump 4' || c === 'ob4' || c === 'orderbump4') return 'Order Bump 4';
   if (c === 'upsell' || c === 'upsell 1' || c === 'up1') return 'Upsell 1';
+  if (c === 'upsell 2' || c === 'up2') return 'Upsell 2';
   if (c === 'downsell' || c === 'downsell 1' || c === 'ds1') return 'Downsell 1';
   if (c === 'ignorar' || c === 'ignore') return 'Ignorar';
   return String(rawCategory || '').trim();
@@ -792,13 +802,16 @@ function getTransactionKey(v, idx) {
 }
 
 /**
- * Lang: datas em update_time; faturamento líquido em commision_value_brl (ver processData).
+ * Lang: datas em update_time; faturamento líquido em price_brl (ver processData).
+ * launch_tag: aliases comuns do export para filtro LaunchTag no painel.
  */
 function normalizeLangVenda(row) {
   const out = { ...row };
   if (sheetValEmpty(out.commision_value_brl) && !sheetValEmpty(row.comission_value_brl)) {
     out.commision_value_brl = row.comission_value_brl;
   }
+  const ltRaw = firstDefinedRow(row, ['launch_tag', 'LaunchTag', 'launchtag', 'Launch Tag', 'Launch_Tag']);
+  out.launch_tag = sheetValEmpty(ltRaw) ? '' : String(ltRaw).trim();
   const ut = row.update_time;
   if (!sheetValEmpty(ut)) {
     out.approved_date = ut;
@@ -888,19 +901,20 @@ function processData(rawVendas, rawMeta, cfg) {
     sourceCountsBeforeFilter: {},
     afterStatusFilter: 0,
     afterDateFilter: 0,
+    afterLaunchTagFilter: 0,
     afterSourceFilter: 0,
     afterDistinctTx: 0
   };
 
   let vendas = rawVendas.map(v => {
     const platFee = parseNum(v.commission_plataform);
-    const liquidoBrl = firstDefinedRow(v, ['commision_value_brl', 'comission_value_brl']);
-    const hasLiquidoLang = !sheetValEmpty(liquidoBrl);
-    const net = hasLiquidoLang ? parseNum(liquidoBrl) : (parseNum(v.payment_price) - platFee);
+    const priceBrlRaw = firstDefinedRow(v, ['price_brl', 'Price_BRL']);
+    const hasPriceBrl = !sheetValEmpty(priceBrlRaw);
+    const net = hasPriceBrl ? parseNum(priceBrlRaw) : (parseNum(v.payment_price) - platFee);
     const grossLegacy = parseNum(v.payment_price);
     return {
       ...v,
-      _price: hasLiquidoLang ? net : grossLegacy,
+      _price: hasPriceBrl ? net : grossLegacy,
       _platformFee: platFee,
       _netPrice: net,
       _date: parseDate(v.update_time || v.approved_date || v.order_date),
@@ -936,6 +950,13 @@ function processData(rawVendas, rawMeta, cfg) {
   if (cfg.dateFrom) vendas = vendas.filter(v => !v._date || v._date >= cfg.dateFrom);
   if (cfg.dateTo) vendas = vendas.filter(v => !v._date || v._date <= cfg.dateTo);
   diagnostics.afterDateFilter = vendas.length;
+
+  const tagWant = String(cfg.launchTagFilter || '').trim().toLowerCase();
+  if (tagWant) {
+    vendas = vendas.filter(v => String(v.launch_tag || '').trim().toLowerCase() === tagWant);
+  }
+  diagnostics.afterLaunchTagFilter = vendas.length;
+
   /* Lang: não filtrar vendas por fonte para evitar perda indevida por variação de utm_source. */
   diagnostics.afterSourceFilter = vendas.length;
 
@@ -992,11 +1013,17 @@ function processData(rawVendas, rawMeta, cfg) {
   const principalSales = categorized['Produto Principal']?.sales || 0;
   const ob1Sales = categorized['Order Bump 1']?.sales || 0;
   const ob2Sales = categorized['Order Bump 2']?.sales || 0;
+  const ob3Sales = categorized['Order Bump 3']?.sales || 0;
+  const ob4Sales = categorized['Order Bump 4']?.sales || 0;
   const upsell1Sales = categorized['Upsell 1']?.sales || 0;
+  const upsell2Sales = categorized['Upsell 2']?.sales || 0;
   const downsell1Sales = categorized['Downsell 1']?.sales || 0;
   const takeRateOB1 = principalSales > 0 ? ob1Sales / principalSales : 0;
   const takeRateOB2 = principalSales > 0 ? ob2Sales / principalSales : 0;
+  const takeRateOB3 = principalSales > 0 ? ob3Sales / principalSales : 0;
+  const takeRateOB4 = principalSales > 0 ? ob4Sales / principalSales : 0;
   const takeRateUpsell1 = principalSales > 0 ? upsell1Sales / principalSales : 0;
+  const takeRateUpsell2 = principalSales > 0 ? upsell2Sales / principalSales : 0;
   const takeRateDownsell1 = principalSales > 0 ? downsell1Sales / principalSales : 0;
   const cacGeral = totalSales > 0 ? totalSpend / totalSales : 0;
 
@@ -1028,7 +1055,7 @@ function processData(rawVendas, rawMeta, cfg) {
   return {
     vendas, meta, offerNames,
     kpi: {
-      totalRevenue, totalSpend, totalPlatformFee, roas, profit, totalSales, principalSales, ob1Sales, ob2Sales, upsell1Sales, downsell1Sales, takeRateOB1, takeRateOB2, takeRateUpsell1, takeRateDownsell1, cacGeral, cpaPrincipal, cpaPrincipalMeta, principalSalesMetaAds, ticketMedio, salesMetaAds, salesOrganic,
+      totalRevenue, totalSpend, totalPlatformFee, roas, profit, totalSales, principalSales, ob1Sales, ob2Sales, ob3Sales, ob4Sales, upsell1Sales, upsell2Sales, downsell1Sales, takeRateOB1, takeRateOB2, takeRateOB3, takeRateOB4, takeRateUpsell1, takeRateUpsell2, takeRateDownsell1, cacGeral, cpaPrincipal, cpaPrincipalMeta, principalSalesMetaAds, ticketMedio, salesMetaAds, salesOrganic,
       totalImpressions, totalClicks, totalLpv, totalIc, ctr, connectRate, icPerLpv, convPageMeta, convPageTotal, convCheckoutMeta, convCheckoutTotal
     },
     categorized, byDay, byCampaign, byCreative, bySource, byOffer, diagnostics
@@ -1038,7 +1065,8 @@ function processData(rawVendas, rawMeta, cfg) {
 function emptyDayRow() {
   return {
     revenue: 0, spend: 0, impressions: 0, clicks: 0, lpv: 0, ic: 0,
-    salesPrincipal: 0, salesPrincipalMeta: 0, salesOB1: 0, salesOB2: 0, salesOther: 0
+    salesPrincipal: 0, salesPrincipalMeta: 0, salesOB1: 0, salesOB2: 0, salesOB3: 0, salesOB4: 0,
+    salesUpsell1: 0, salesUpsell2: 0, salesDownsell1: 0, salesOther: 0
   };
 }
 
@@ -1181,9 +1209,15 @@ function renderKPIs(kpi) {
     <article class="card"><div class="kpi-label">Vendas OB2</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob2Sales)}</div><div class="delta">Order Bump 2</div></article>
     <article class="card"><div class="kpi-label">Take rate OB1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB1)}</div><div class="delta">OB1 / Principal</div></article>
     <article class="card"><div class="kpi-label">Take rate OB2</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB2)}</div><div class="delta">OB2 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB3</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob3Sales)}</div><div class="delta">Order Bump 3</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB3</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB3)}</div><div class="delta">OB3 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB4</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob4Sales)}</div><div class="delta">Order Bump 4</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB4</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB4)}</div><div class="delta">OB4 / Principal</div></article>
     <article class="card"><div class="kpi-label">Vendas Upsell 1</div><div class="kpi-value kpi-sm">${fmtNum(kpi.upsell1Sales)}</div><div class="delta">Upsell 1</div></article>
+    <article class="card"><div class="kpi-label">Vendas Upsell 2</div><div class="kpi-value kpi-sm">${fmtNum(kpi.upsell2Sales)}</div><div class="delta">Upsell 2</div></article>
     <article class="card"><div class="kpi-label">Vendas Downsell 1</div><div class="kpi-value kpi-sm">${fmtNum(kpi.downsell1Sales)}</div><div class="delta">Downsell 1</div></article>
     <article class="card"><div class="kpi-label">Take rate Upsell 1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateUpsell1)}</div><div class="delta">Upsell 1 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Take rate Upsell 2</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateUpsell2)}</div><div class="delta">Upsell 2 / Principal</div></article>
     <article class="card"><div class="kpi-label">Take rate Downsell 1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateDownsell1)}</div><div class="delta">Downsell 1 / Principal</div></article>
     <article class="card"><div class="kpi-label">Ticket Medio</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.ticketMedio)}</div><div class="delta">Fat. / ${fmtNum(kpi.principalSales)} vendas princ.</div></article>
     <article class="card"><div class="kpi-label">CAC geral</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.cacGeral)}</div><div class="delta">Invest / vendas totais</div></article>
@@ -1269,7 +1303,10 @@ function renderCharts(byDay, kpi) {
         { label: 'Principal', data: byDay.map(d => d.salesPrincipal), backgroundColor: 'rgba(23,150,212,.7)' },
         { label: 'OB1', data: byDay.map(d => d.salesOB1), backgroundColor: 'rgba(255,195,15,.7)' },
         { label: 'OB2', data: byDay.map(d => d.salesOB2), backgroundColor: 'rgba(98,192,238,.7)' },
+        { label: 'OB3', data: byDay.map(d => d.salesOB3), backgroundColor: 'rgba(23,150,212,.55)' },
+        { label: 'OB4', data: byDay.map(d => d.salesOB4), backgroundColor: 'rgba(98,192,238,.45)' },
         { label: 'Upsell 1', data: byDay.map(d => d.salesUpsell1), backgroundColor: 'rgba(126,87,194,.7)' },
+        { label: 'Upsell 2', data: byDay.map(d => d.salesUpsell2), backgroundColor: 'rgba(180,130,220,.7)' },
         { label: 'Downsell 1', data: byDay.map(d => d.salesDownsell1), backgroundColor: 'rgba(255,138,101,.7)' }
       ]
     },
@@ -1490,7 +1527,12 @@ function renderSplit(kpi, byCampaign, bySource) {
   const orgSrc = bySource.filter(s => s.source !== 'Meta_Ads');
   if (metaSrc) what.push(`<li>Meta Ads respondeu por <strong>${fmtNum(metaSrc.sales)} vendas</strong> (${fmtPct(kpi.totalSales > 0 ? metaSrc.sales / kpi.totalSales : 0)}).</li>`);
   if (orgSrc.length) what.push(`<li>Fontes organicas/outras: ${orgSrc.map(s => `${s.source} (${fmtNum(s.sales)})`).join(', ')}.</li>`);
-  if (kpi.ob1Sales > 0) what.push(`<li>Take rate OB1: <strong>${fmtPct(kpi.takeRateOB1)}</strong> | OB2: <strong>${fmtPct(kpi.takeRateOB2)}</strong>.</li>`);
+  if (kpi.ob1Sales > 0 || kpi.ob2Sales > 0 || kpi.ob3Sales > 0 || kpi.ob4Sales > 0) {
+    what.push(`<li>Take rate OB1–OB4: <strong>${fmtPct(kpi.takeRateOB1)}</strong> | <strong>${fmtPct(kpi.takeRateOB2)}</strong> | <strong>${fmtPct(kpi.takeRateOB3)}</strong> | <strong>${fmtPct(kpi.takeRateOB4)}</strong>.</li>`);
+  }
+  if (kpi.upsell1Sales > 0 || kpi.upsell2Sales > 0) {
+    what.push(`<li>Take rate Upsell 1/2: <strong>${fmtPct(kpi.takeRateUpsell1)}</strong> | <strong>${fmtPct(kpi.takeRateUpsell2)}</strong>.</li>`);
+  }
   $('splitWhat').innerHTML = what.join('');
 
   const why = [];
@@ -1577,7 +1619,7 @@ function generateInsights(finalData, cfg) {
     const dow = dt.getDay();
     dowStats[dow].revenue += d.revenue;
     dowStats[dow].spend += d.spend;
-    const daySales = (d.salesPrincipal||0) + (d.salesOB1||0) + (d.salesOB2||0) + (d.salesOther||0);
+    const daySales = (d.salesPrincipal||0) + (d.salesOB1||0) + (d.salesOB2||0) + (d.salesOB3||0) + (d.salesOB4||0) + (d.salesUpsell1||0) + (d.salesUpsell2||0) + (d.salesDownsell1||0) + (d.salesOther||0);
     dowStats[dow].sales += daySales;
     dowStats[dow].count++;
   });
@@ -1782,7 +1824,10 @@ function enrichDayWithOfferSales(byDay, vendas, offerMap) {
     d.salesPrincipalMeta = 0;
     d.salesOB1 = 0;
     d.salesOB2 = 0;
+    d.salesOB3 = 0;
+    d.salesOB4 = 0;
     d.salesUpsell1 = 0;
+    d.salesUpsell2 = 0;
     d.salesDownsell1 = 0;
     d.salesOther = 0;
   });
@@ -1794,7 +1839,10 @@ function enrichDayWithOfferSales(byDay, vendas, offerMap) {
       if (v._source === 'Meta_Ads') dayMap[d].salesPrincipalMeta++;
     } else if (cat === 'Order Bump 1') dayMap[d].salesOB1++;
     else if (cat === 'Order Bump 2') dayMap[d].salesOB2++;
+    else if (cat === 'Order Bump 3') dayMap[d].salesOB3++;
+    else if (cat === 'Order Bump 4') dayMap[d].salesOB4++;
     else if (cat === 'Upsell 1') dayMap[d].salesUpsell1++;
+    else if (cat === 'Upsell 2') dayMap[d].salesUpsell2++;
     else if (cat === 'Downsell 1') dayMap[d].salesDownsell1++;
     else dayMap[d].salesOther++;
   });
@@ -1807,6 +1855,31 @@ function showStatus(msg, type) {
   const el = $('statusMsg');
   el.className = 'status-msg ' + type;
   el.textContent = msg;
+}
+
+function populateLaunchTagOptions(rawVendas) {
+  const sel = $('filterLaunchTag');
+  if (!sel) return;
+  const set = new Set();
+  rawVendas.forEach(row => {
+    const lt = String(row.launch_tag || '').trim();
+    if (lt) set.add(lt);
+  });
+  const tags = [...set].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+  const saved = String(getConfig().launchTagFilter || '').trim();
+  sel.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = '';
+  optAll.textContent = 'Todos';
+  sel.appendChild(optAll);
+  tags.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+  const match = tags.find(t => t.toLowerCase() === saved.toLowerCase());
+  sel.value = match !== undefined ? match : '';
 }
 
 /* ============================================================
@@ -1830,12 +1903,16 @@ async function loadAndRender() {
     const rawVendas = vRows.map(normalizeLangVenda);
     const rawMeta = mRows.map(normalizeLangMeta);
 
+    populateLaunchTagOptions(rawVendas);
+    const cfgLoaded = readConfigFromUI();
+    saveConfig(cfgLoaded);
+
     showStatus(`Vendas: ${rawVendas.length} linhas | Meta: ${rawMeta.length} linhas. Processando...`, 'loading');
 
-    const data = processData(rawVendas, rawMeta, cfg);
+    const data = processData(rawVendas, rawMeta, cfgLoaded);
 
-    renderOfferTable(data.offerNames, cfg.offerMap);
-    const finalCfg = { ...cfg, offerMap: readOfferMap() };
+    renderOfferTable(data.offerNames, cfgLoaded.offerMap);
+    const finalCfg = { ...cfgLoaded, offerMap: readOfferMap() };
     saveConfig(finalCfg);
     const finalData = processData(rawVendas, rawMeta, finalCfg);
 
@@ -1877,7 +1954,7 @@ async function loadAndRender() {
     const statusCompact = Object.keys(rawCounts).sort().map(k => `${k}:${rawCounts[k]}`).join(', ');
     const srcCompact = Object.keys(srcCounts).sort().map(k => `${k}:${srcCounts[k]}`).join(', ');
     showStatus(
-      `OK · status [${statusCompact || 'sem status'}] · fontes [${srcCompact || 'sem fontes'}] · após status: ${fmtNum(d.afterStatusFilter || 0)} · após data: ${fmtNum(d.afterDateFilter || 0)} · após source: ${fmtNum(d.afterSourceFilter || 0)} · transacoes unicas: ${fmtNum(d.afterDistinctTx || finalData.vendas.length)}`,
+      `OK · status [${statusCompact || 'sem status'}] · fontes [${srcCompact || 'sem fontes'}] · após status: ${fmtNum(d.afterStatusFilter || 0)} · após data: ${fmtNum(d.afterDateFilter || 0)} · após LaunchTag: ${fmtNum(d.afterLaunchTagFilter ?? d.afterDateFilter ?? 0)} · após source: ${fmtNum(d.afterSourceFilter || 0)} · transacoes unicas: ${fmtNum(d.afterDistinctTx || finalData.vendas.length)}`,
       'ok'
     );
   } catch (err) {
@@ -1988,6 +2065,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btnClearFilter').addEventListener('click', () => {
     clearQuickActive();
     setFilterDates('', '');
+    if ($('filterLaunchTag')) $('filterLaunchTag').value = '';
     refresh();
   });
 
@@ -2001,6 +2079,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('cfgDateTo').value = $('filterDateTo').value;
     refresh();
   });
+
+  if ($('filterLaunchTag')) {
+    $('filterLaunchTag').addEventListener('change', () => {
+      const c = readConfigFromUI();
+      saveConfig(c);
+      refresh();
+    });
+  }
 
   /* Insights bar */
   $('btnGenerateInsights').addEventListener('click', () => {
