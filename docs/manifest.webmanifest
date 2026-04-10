@@ -1,0 +1,24 @@
+{
+  "name": "Dashboard Perpetuo Lang - Tracking HighEnd",
+  "short_name": "Lang",
+  "description": "Dashboard de funil perpetuo Lang com dados do Google Sheets",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "icons/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
