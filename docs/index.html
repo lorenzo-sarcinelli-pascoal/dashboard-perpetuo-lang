@@ -520,6 +520,13 @@
       <div class="overflow-x"><table id="tableCreative"><thead></thead><tbody></tbody></table></div>
     </section>
 
+    <!-- Top conjuntos: adset (Meta) x utm_medium (vendas) -->
+    <section class="section" id="sectionAdset">
+      <p class="section-title" id="sectionAdsetTitle">Top conjuntos (utm_medium)</p>
+      <p class="insight1" id="adsetInsight"></p>
+      <div class="overflow-x"><table id="tableAdset"><thead></thead><tbody></tbody></table></div>
+    </section>
+
     <!-- Performance por Fonte -->
     <section class="section" id="sectionSource">
       <p class="section-title">Performance por fonte</p>
@@ -1061,6 +1068,7 @@ function processData(rawVendas, rawMeta, cfg) {
   const byDay = groupByDay(vendas, meta);
   const byCampaign = groupByCampaign(vendas, meta, cfg);
   const byCreative = groupByCreative(vendas, meta, cfg);
+  const byAdset = groupByAdset(vendas, meta, cfg);
   const bySource = groupBySource(vendas);
   const byOffer = groupByOffer(vendas, offerMap);
 
@@ -1070,7 +1078,7 @@ function processData(rawVendas, rawMeta, cfg) {
       totalRevenue, totalSpend, totalPlatformFee, roas, profit, totalSales, principalSales, ob1Sales, ob2Sales, ob3Sales, ob4Sales, upsell1Sales, upsell2Sales, downsell1Sales, takeRateOB1, takeRateOB2, takeRateOB3, takeRateOB4, takeRateUpsell1, takeRateUpsell2, takeRateDownsell1, cacGeral, cpaPrincipal, cpaPrincipalMeta, principalSalesMetaAds, ticketMedio, salesMetaAds, salesOrganic,
       totalImpressions, totalClicks, totalLpv, totalIc, ctr, connectRate, icPerLpv, convPageMeta, convPageTotal, convCheckoutMeta, convCheckoutTotal
     },
-    categorized, byDay, byCampaign, byCreative, bySource, byOffer, diagnostics
+    categorized, byDay, byCampaign, byCreative, byAdset, bySource, byOffer, diagnostics
   };
 }
 
@@ -1102,14 +1110,23 @@ function groupByDay(vendas, meta) {
 }
 
 function groupByCampaign(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
   const campaigns = {};
   meta.forEach(m => {
     const name = String(m.campaign_name || '').trim() || `CID:${m._cid}`;
-    if (!campaigns[name]) campaigns[name] = { name, spend: 0, impressions: 0, clicks: 0, sales: 0, revenue: 0, cid: m._cid };
+    if (!campaigns[name]) {
+      campaigns[name] = { name, spend: 0, impressions: 0, clicks: 0, sales: 0, revenue: 0, principalSales: 0, cid: m._cid };
+    }
     campaigns[name].spend += m._spend;
     campaigns[name].impressions += m._impressions;
     campaigns[name].clicks += m._clicks;
   });
+
+  const bump = (c, v) => {
+    c.sales++;
+    c.revenue += v._netPrice;
+    if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') c.principalSales++;
+  };
 
   if (cfg.matchMethod === 'campaign_id') {
     vendas.forEach(v => {
@@ -1117,7 +1134,7 @@ function groupByCampaign(vendas, meta, cfg) {
       const vid = findNumericCampaignId(v);
       if (!vid) return;
       for (const c of Object.values(campaigns)) {
-        if (c.cid === vid) { c.sales++; c.revenue += v._netPrice; break; }
+        if (c.cid === vid) { bump(c, v); break; }
       }
     });
   } else {
@@ -1127,7 +1144,8 @@ function groupByCampaign(vendas, meta, cfg) {
       if (!utmVal) return;
       for (const c of Object.values(campaigns)) {
         if (c.name.toLowerCase().includes(utmVal) || utmVal.includes(c.name.toLowerCase())) {
-          c.sales++; c.revenue += v._netPrice; break;
+          bump(c, v);
+          break;
         }
       }
     });
@@ -1136,11 +1154,12 @@ function groupByCampaign(vendas, meta, cfg) {
 }
 
 function groupByCreative(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
   const buckets = {};
   meta.forEach(m => {
     const name = String(m.ad_name || '').trim();
     if (!name) return;
-    if (!buckets[name]) buckets[name] = { name, spend: 0, sales: 0, revenue: 0 };
+    if (!buckets[name]) buckets[name] = { name, spend: 0, sales: 0, revenue: 0, principalSales: 0 };
     buckets[name].spend += m._spend;
   });
 
@@ -1150,11 +1169,41 @@ function groupByCreative(vendas, meta, cfg) {
     if (!utmVal) return;
     for (const a of Object.values(buckets)) {
       if (a.name.toLowerCase().includes(utmVal) || utmVal.includes(a.name.toLowerCase())) {
-        a.sales++; a.revenue += v._netPrice; break;
+        a.sales++;
+        a.revenue += v._netPrice;
+        if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') a.principalSales++;
+        break;
       }
     }
   });
   return Object.values(buckets).sort((a, b) => b.sales - a.sales).slice(0, 10);
+}
+
+/** Conjunto (Meta adset_name) x utm_medium (vendas), mesmo critério de contains do README. */
+function groupByAdset(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
+  const buckets = {};
+  meta.forEach(m => {
+    const name = String(m.adset_name || '').trim();
+    if (!name) return;
+    if (!buckets[name]) buckets[name] = { name, spend: 0, sales: 0, revenue: 0, principalSales: 0 };
+    buckets[name].spend += m._spend;
+  });
+
+  vendas.forEach(v => {
+    if (v._source !== 'Meta_Ads') return;
+    const utmVal = String(v.utm_medium || '').trim().toLowerCase();
+    if (!utmVal) return;
+    for (const a of Object.values(buckets)) {
+      if (a.name.toLowerCase().includes(utmVal) || utmVal.includes(a.name.toLowerCase())) {
+        a.sales++;
+        a.revenue += v._netPrice;
+        if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') a.principalSales++;
+        break;
+      }
+    }
+  });
+  return Object.values(buckets).sort((a, b) => b.spend - a.spend).slice(0, 10);
 }
 
 function groupBySource(vendas) {
@@ -1486,20 +1535,24 @@ function renderTableOffer(byOffer, kpi) {
 function renderTableCampaign(byCampaign) {
   const totalSpend = byCampaign.reduce((s, c) => s + c.spend, 0);
   const totalSales = byCampaign.reduce((s, c) => s + c.sales, 0);
+  const totalPrincipal = byCampaign.reduce((s, c) => s + (c.principalSales || 0), 0);
   const totalRev = byCampaign.reduce((s, c) => s + c.revenue, 0);
   const totalProfit = totalRev - totalSpend;
   const topC = byCampaign.find(c => c.sales > 0);
   $('campaignInsight').textContent = topC ? `Campanha ${topC.name} concentra volume.` : 'Nenhuma venda atribuida a campanhas.';
-  const thead = `<tr><th>Campanha</th><th class="r">Invest.</th><th class="r">Vendas</th><th class="r">Fat.</th><th class="r">Lucro</th><th class="r">ROAS</th><th>Status</th></tr>`;
+  const thead = `<tr><th>Campanha</th><th class="r">Invest.</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">CPA princ.</th><th class="r">Fat.</th><th class="r">Lucro</th><th class="r">ROAS</th><th>Status</th></tr>`;
   const rows = byCampaign.filter(c => c.spend > 0).map(c => {
+    const ps = c.principalSales || 0;
+    const cpaP = ps > 0 ? c.spend / ps : null;
     const r = c.spend > 0 ? c.revenue / c.spend : null;
     const lucro = c.revenue - c.spend;
     const lucroClass = lucro >= 0 ? 'up' : 'down';
-    return `<tr><td>${esc(c.name)}</td><td class="r">${fmtBRL(c.spend)}</td><td class="r">${fmtNum(c.sales)}</td><td class="r">${fmtBRL(c.revenue)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r" style="color:${roasColor(r)}">${r != null ? r.toFixed(2) : '—'}</td><td>${roasBadge(r)}</td></tr>`;
+    return `<tr><td>${esc(c.name)}</td><td class="r">${fmtBRL(c.spend)}</td><td class="r">${fmtNum(c.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r">${fmtBRL(c.revenue)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r" style="color:${roasColor(r)}">${r != null ? r.toFixed(2) : '—'}</td><td>${roasBadge(r)}</td></tr>`;
   }).join('');
   const totalRoas = totalSpend > 0 ? totalRev / totalSpend : null;
+  const totalCpaP = totalPrincipal > 0 ? totalSpend / totalPrincipal : null;
   const profitClass = totalProfit >= 0 ? 'up' : 'down';
-  const totalRow = `<tr class="total"><td>Total</td><td class="r">${fmtBRL(totalSpend)}</td><td class="r">${fmtNum(totalSales)}</td><td class="r">${fmtBRL(totalRev)}</td><td class="r ${profitClass}">${fmtBRL(totalProfit)}</td><td class="r" style="color:${roasColor(totalRoas)}">${totalRoas != null ? totalRoas.toFixed(2) : '—'}</td><td></td></tr>`;
+  const totalRow = `<tr class="total"><td>Total</td><td class="r">${fmtBRL(totalSpend)}</td><td class="r">${fmtNum(totalSales)}</td><td class="r">${fmtNum(totalPrincipal)}</td><td class="r">${totalCpaP != null ? fmtBRL(totalCpaP) : '—'}</td><td class="r">${fmtBRL(totalRev)}</td><td class="r ${profitClass}">${fmtBRL(totalProfit)}</td><td class="r" style="color:${roasColor(totalRoas)}">${totalRoas != null ? totalRoas.toFixed(2) : '—'}</td><td></td></tr>`;
   $('tableCampaign').innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
 }
 
@@ -1510,15 +1563,35 @@ function renderTableCreative(byCreative) {
   $('creativeInsight').textContent = top && top.sales > 0
     ? `${top.name} lidera com ${top.sales} vendas.`
     : 'Match por criativo usa ad (Meta) x utm_content (vendas).';
-  const thead = `<tr><th>Anuncio</th><th class="r">Vendas</th><th class="r">Invest.</th><th class="r">Lucro</th><th class="r">CAC</th><th class="r">ROAS</th></tr>`;
+  const thead = `<tr><th>Anuncio</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">Invest.</th><th class="r">Lucro</th><th class="r">CPA princ.</th><th class="r">ROAS</th></tr>`;
   const rows = byCreative.map(a => {
-    const cac = a.sales > 0 ? a.spend / a.sales : null;
+    const ps = a.principalSales || 0;
+    const cpaP = ps > 0 ? a.spend / ps : null;
     const roas = a.spend > 0 ? a.revenue / a.spend : null;
     const lucro = a.revenue - a.spend;
     const lucroClass = lucro >= 0 ? 'up' : 'down';
-    return `<tr><td>${esc(a.name)}</td><td class="r">${fmtNum(a.sales)}</td><td class="r">${fmtBRL(a.spend)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r">${cac != null ? fmtBRL(cac) : '—'}</td><td class="r" style="color:${roasColor(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
+    return `<tr><td>${esc(a.name)}</td><td class="r">${fmtNum(a.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${fmtBRL(a.spend)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r" style="color:${roasColor(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
   }).join('');
   $('tableCreative').innerHTML = `<thead>${thead}</thead><tbody>${rows}</tbody>`;
+}
+
+function renderTableAdset(byAdset) {
+  const top = byAdset[0];
+  const titleEl = $('sectionAdsetTitle');
+  if (titleEl) titleEl.textContent = 'Top conjuntos (utm_medium)';
+  $('adsetInsight').textContent = top && top.spend > 0
+    ? (top.sales > 0 ? `${top.name} lidera em investimento com ${fmtNum(top.sales)} vendas.` : `${top.name} concentra investimento; confira match utm_medium.`)
+    : 'Match por conjunto usa adset (Meta) x utm_medium (vendas).';
+  const thead = `<tr><th>Conjunto</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">Invest.</th><th class="r">Lucro</th><th class="r">CPA princ.</th><th class="r">ROAS</th></tr>`;
+  const rows = byAdset.map(a => {
+    const ps = a.principalSales || 0;
+    const cpaP = ps > 0 ? a.spend / ps : null;
+    const roas = a.spend > 0 ? a.revenue / a.spend : null;
+    const lucro = a.revenue - a.spend;
+    const lucroClass = lucro >= 0 ? 'up' : 'down';
+    return `<tr><td>${esc(a.name)}</td><td class="r">${fmtNum(a.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${fmtBRL(a.spend)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r" style="color:${roasColor(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
+  }).join('');
+  $('tableAdset').innerHTML = `<thead>${thead}</thead><tbody>${rows}</tbody>`;
 }
 
 function renderTableSource(bySource, kpi) {
@@ -1936,6 +2009,7 @@ async function loadAndRender() {
     renderTableOffer(finalData.byOffer, finalData.kpi);
     renderTableCampaign(finalData.byCampaign);
     renderTableCreative(finalData.byCreative);
+    renderTableAdset(finalData.byAdset);
     renderTableSource(finalData.bySource, finalData.kpi);
     renderSplit(finalData.kpi, finalData.byCampaign, finalData.bySource);
     renderFooter(finalCfg);
@@ -1992,6 +2066,7 @@ async function refresh() {
   renderTableOffer(finalData.byOffer, finalData.kpi);
   renderTableCampaign(finalData.byCampaign);
   renderTableCreative(finalData.byCreative);
+  renderTableAdset(finalData.byAdset);
   renderTableSource(finalData.bySource, finalData.kpi);
   renderSplit(finalData.kpi, finalData.byCampaign, finalData.bySource);
   renderFooter(cfg);
