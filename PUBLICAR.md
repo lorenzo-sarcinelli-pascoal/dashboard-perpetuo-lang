@@ -44,6 +44,18 @@ No repo **`dashboard-perpetuo-lang`**:
 
 Esse erro vinha do workflow antigo (artifact + “GitHub Actions” como source). O fluxo atual **não usa** `configure-pages`. Faça pull do mono-repo, **subtree push** de novo e configure o Pages como no passo 4.
 
-### Manutenção
+### Publicação automática (recomendado)
 
-Após alterar `dashboard-perpetuo-lang/` no mono-repo: commit em `debriefings-the`, depois de novo `subtree split` + `push` (passo 2).
+No repositório **`debriefings-the`** (mono-repo na raiz):
+
+1. **Settings → Secrets and variables → Actions → New repository secret**
+2. Nome: **`DASHBOARD_PERPETUO_LANG_PUSH_TOKEN`**
+3. Valor: um **Personal Access Token** (classic: escopo `repo`, ou fine-grained com *Contents: Read and write* só no repo `dashboard-perpetuo-lang`) com permissão de **push** em `lorenzo-sarcinelli-pascoal/dashboard-perpetuo-lang`.
+
+Com isso, cada **`git push origin main`** que alterar arquivos em `dashboard-perpetuo-lang/**` dispara o workflow **Publish dashboard-perpetuo-lang**, que faz o `subtree split` e o push para `main` do repo público — **sem precisar rodar o passo 2 manualmente**.
+
+Se o secret não existir, o workflow apenas emite aviso e não falha o CI.
+
+### Manutenção manual (alternativa)
+
+Se preferir não usar o token: após alterar `dashboard-perpetuo-lang/` no mono-repo, commit em `debriefings-the` e rode o passo 2 (`subtree split` + `push`).
