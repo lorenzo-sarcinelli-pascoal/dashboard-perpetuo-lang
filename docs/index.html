@@ -364,7 +364,7 @@
             <tbody id="offerTableBody"></tbody>
           </table>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin-top:6px;">As ofertas aparecem automaticamente apos carregar os dados.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:6px;">As ofertas aparecem apos carregar. A categoria inicial vem da coluna <strong>category</strong> da planilha (mesmas regras do motor); altere aqui apenas para sobrescrever.</p>
       </div>
 
       <div class="config-section">
@@ -664,15 +664,16 @@ function readOfferMap() {
   return map;
 }
 
-function renderOfferTable(offerNames, offerMap) {
+function renderOfferTable(offerNames, offerMap, vendas) {
   const tbody = $('offerTableBody');
   tbody.innerHTML = '';
   offerNames.forEach(name => {
     const tr = document.createElement('tr');
     tr.dataset.offer = name;
-    const cat = offerMap[name] || 'Produto Principal';
-    tr.innerHTML = `<td>${esc(name)}</td><td><select>${OFFER_CATEGORIES.map(c =>
-      `<option${c === cat ? ' selected' : ''}>${c}</option>`).join('')}</select></td>`;
+    const cat = resolveOfferTableCategory(name, offerMap, vendas);
+    const opts = offerCategorySelectOptions(cat);
+    tr.innerHTML = `<td>${esc(name)}</td><td><select>${opts.map(c =>
+      `<option${c === cat ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></td>`;
     tr.querySelector('select').addEventListener('change', () => {
       const cfg = loadConfig();
       cfg.offerMap = readOfferMap();
@@ -754,7 +755,30 @@ function getOfferCategoryForSale(v, offerMap) {
   return normalizeOfferCategory(v.category);
 }
 
-/** utm_source: metaads / meta_ads / ig / fb → Meta_Ads; instagram permanece instagram */
+/** Categoria do select na tabela: override salvo ou inferida da planilha (igual getOfferCategoryForSale sem mapa). */
+function inferDefaultCategoryFromSheet(displayName, vendas) {
+  if (!vendas || !vendas.length) return 'Produto Principal';
+  for (let i = 0; i < vendas.length; i++) {
+    if (getOfferDisplayName(vendas[i]) === displayName) {
+      return normalizeOfferCategory(vendas[i].category);
+    }
+  }
+  return 'Produto Principal';
+}
+
+function resolveOfferTableCategory(displayName, offerMap, vendas) {
+  const saved = offerMap[displayName];
+  if (!sheetValEmpty(saved)) return saved;
+  return inferDefaultCategoryFromSheet(displayName, vendas);
+}
+
+/** Lista de opcoes do select: padrao + valor atual se for custom da planilha. */
+function offerCategorySelectOptions(selected) {
+  const list = OFFER_CATEGORIES.slice();
+  if (selected && !list.includes(selected)) list = [selected, ...list];
+  return list;
+}
+
 /** utm_source → Meta_Ads apenas: metaads, meta_ads, ig, fb (Instagram orgânico fica como "instagram"). */
 const LANG_UTM_SOURCE_AS_META_ADS = new Set(['metaads', 'meta_ads', 'ig', 'fb']);
 
@@ -1899,7 +1923,7 @@ async function loadAndRender() {
 
     const data = processData(rawVendas, rawMeta, cfgLoaded);
 
-    renderOfferTable(data.offerNames, cfgLoaded.offerMap);
+    renderOfferTable(data.offerNames, cfgLoaded.offerMap, data.vendas);
     const finalCfg = { ...cfgLoaded, offerMap: readOfferMap() };
     saveConfig(finalCfg);
     const finalData = processData(rawVendas, rawMeta, finalCfg);
