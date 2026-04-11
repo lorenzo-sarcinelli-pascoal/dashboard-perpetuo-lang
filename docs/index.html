@@ -1532,16 +1532,16 @@ function renderTableOffer(byOffer, kpi) {
   $('tableOffer').innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
 }
 
-function renderTableCampaign(byCampaign) {
-  const totalSpend = byCampaign.reduce((s, c) => s + c.spend, 0);
-  const totalSales = byCampaign.reduce((s, c) => s + c.sales, 0);
-  const totalPrincipal = byCampaign.reduce((s, c) => s + (c.principalSales || 0), 0);
-  const totalRev = byCampaign.reduce((s, c) => s + c.revenue, 0);
+/** Mesma estrutura que Performance por campanha: 1ª coluna = nome; ordem Invest., Vendas, Vendas princ., CPA princ., Fat., Lucro, ROAS, Status + linha Total. */
+function renderPerformanceBreakdownTable(tableEl, firstColumnLabel, items) {
+  const filtered = items.filter(c => c.spend > 0);
+  const totalSpend = filtered.reduce((s, c) => s + c.spend, 0);
+  const totalSales = filtered.reduce((s, c) => s + c.sales, 0);
+  const totalPrincipal = filtered.reduce((s, c) => s + (c.principalSales || 0), 0);
+  const totalRev = filtered.reduce((s, c) => s + c.revenue, 0);
   const totalProfit = totalRev - totalSpend;
-  const topC = byCampaign.find(c => c.sales > 0);
-  $('campaignInsight').textContent = topC ? `Campanha ${topC.name} concentra volume.` : 'Nenhuma venda atribuida a campanhas.';
-  const thead = `<tr><th>Campanha</th><th class="r">Invest.</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">CPA princ.</th><th class="r">Fat.</th><th class="r">Lucro</th><th class="r">ROAS</th><th>Status</th></tr>`;
-  const rows = byCampaign.filter(c => c.spend > 0).map(c => {
+  const thead = `<tr><th>${esc(firstColumnLabel)}</th><th class="r">Invest.</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">CPA princ.</th><th class="r">Fat.</th><th class="r">Lucro</th><th class="r">ROAS</th><th>Status</th></tr>`;
+  const rows = filtered.map(c => {
     const ps = c.principalSales || 0;
     const cpaP = ps > 0 ? c.spend / ps : null;
     const r = c.spend > 0 ? c.revenue / c.spend : null;
@@ -1553,7 +1553,13 @@ function renderTableCampaign(byCampaign) {
   const totalCpaP = totalPrincipal > 0 ? totalSpend / totalPrincipal : null;
   const profitClass = totalProfit >= 0 ? 'up' : 'down';
   const totalRow = `<tr class="total"><td>Total</td><td class="r">${fmtBRL(totalSpend)}</td><td class="r">${fmtNum(totalSales)}</td><td class="r">${fmtNum(totalPrincipal)}</td><td class="r">${totalCpaP != null ? fmtBRL(totalCpaP) : '—'}</td><td class="r">${fmtBRL(totalRev)}</td><td class="r ${profitClass}">${fmtBRL(totalProfit)}</td><td class="r" style="color:${roasColor(totalRoas)}">${totalRoas != null ? totalRoas.toFixed(2) : '—'}</td><td></td></tr>`;
-  $('tableCampaign').innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
+  tableEl.innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
+}
+
+function renderTableCampaign(byCampaign) {
+  const topC = byCampaign.find(c => c.sales > 0);
+  $('campaignInsight').textContent = topC ? `Campanha ${topC.name} concentra volume.` : 'Nenhuma venda atribuida a campanhas.';
+  renderPerformanceBreakdownTable($('tableCampaign'), 'Campanha', byCampaign);
 }
 
 function renderTableCreative(byCreative) {
@@ -1563,16 +1569,7 @@ function renderTableCreative(byCreative) {
   $('creativeInsight').textContent = top && top.sales > 0
     ? `${top.name} lidera com ${top.sales} vendas.`
     : 'Match por criativo usa ad (Meta) x utm_content (vendas).';
-  const thead = `<tr><th>Anuncio</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">Invest.</th><th class="r">Lucro</th><th class="r">CPA princ.</th><th class="r">ROAS</th></tr>`;
-  const rows = byCreative.map(a => {
-    const ps = a.principalSales || 0;
-    const cpaP = ps > 0 ? a.spend / ps : null;
-    const roas = a.spend > 0 ? a.revenue / a.spend : null;
-    const lucro = a.revenue - a.spend;
-    const lucroClass = lucro >= 0 ? 'up' : 'down';
-    return `<tr><td>${esc(a.name)}</td><td class="r">${fmtNum(a.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${fmtBRL(a.spend)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r" style="color:${roasColor(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
-  }).join('');
-  $('tableCreative').innerHTML = `<thead>${thead}</thead><tbody>${rows}</tbody>`;
+  renderPerformanceBreakdownTable($('tableCreative'), 'Anuncio', byCreative);
 }
 
 function renderTableAdset(byAdset) {
@@ -1582,16 +1579,7 @@ function renderTableAdset(byAdset) {
   $('adsetInsight').textContent = top && top.spend > 0
     ? (top.sales > 0 ? `${top.name} lidera em investimento com ${fmtNum(top.sales)} vendas.` : `${top.name} concentra investimento; confira match utm_medium.`)
     : 'Match por conjunto usa adset (Meta) x utm_medium (vendas).';
-  const thead = `<tr><th>Conjunto</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">Invest.</th><th class="r">Lucro</th><th class="r">CPA princ.</th><th class="r">ROAS</th></tr>`;
-  const rows = byAdset.map(a => {
-    const ps = a.principalSales || 0;
-    const cpaP = ps > 0 ? a.spend / ps : null;
-    const roas = a.spend > 0 ? a.revenue / a.spend : null;
-    const lucro = a.revenue - a.spend;
-    const lucroClass = lucro >= 0 ? 'up' : 'down';
-    return `<tr><td>${esc(a.name)}</td><td class="r">${fmtNum(a.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${fmtBRL(a.spend)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r" style="color:${roasColor(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
-  }).join('');
-  $('tableAdset').innerHTML = `<thead>${thead}</thead><tbody>${rows}</tbody>`;
+  renderPerformanceBreakdownTable($('tableAdset'), 'Conjunto', byAdset);
 }
 
 function renderTableSource(bySource, kpi) {
