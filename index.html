@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Perpetuo Lang — Tracking HighEnd</title>
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="THE Lang" />
+  <link rel="icon" type="image/svg+xml" href="icons/the-icon.svg" />
+  <link rel="icon" type="image/png" href="icons/app-icon.png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --major-01: #D9C8B7;
+      --major-02: #0F172A;
+      --surface-01: #12131F;
+      --surface-02: #151B2E;
+      --border: #222433;
+      --muted: #8E92AD;
+      --accent-01: #08344A;
+      --accent-02: #1796D4;
+      --accent-03: #62C0EE;
+      --accent-04: #FFC30F;
+      --accent-05: #CC9900;
+      --success: #58D417;
+      --warning: #FFC30F;
+      --danger: #FC7148;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Plus Jakarta Sans","Inter",system-ui,-apple-system,sans-serif; background: var(--major-02); color: var(--major-01); line-height: 1.5; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+    /* Header */
+    .header { background: rgba(15,23,42,.92); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+    .header-left { display: flex; align-items: flex-start; gap: 14px; }
+    .header-left h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .header-left small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .the-logo { height: 42px; width: auto; flex-shrink: 0; margin-top: 2px; }
+    .the-logo-sticky { height: 30px; width: auto; flex-shrink: 0; margin: 0; }
+    .header-slim { align-items: center; }
+    .header-slim-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+    .header-slim-left .meta { margin-bottom: 0; }
+    .header-slim-left small { display: block; line-height: 1.5; }
+    .sticky-dash-top {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      margin: 0 -24px 16px -24px;
+      padding: 10px 24px;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      background: rgba(15,23,42,.98);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .sticky-dash-inner { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+    .sticky-dash-text { min-width: 0; flex: 1; }
+    .sticky-dash-title {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      min-width: 0;
+      font-size: clamp(15px, 3.8vw, 19px);
+      font-weight: 700;
+      margin: 0 0 2px 0;
+      line-height: 1.2;
+    }
+    .sticky-brand { flex-shrink: 0; color: var(--major-01); }
+    .sticky-sep { flex-shrink: 0; color: var(--muted); font-weight: 600; }
+    .sticky-client-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sticky-updated { display: block; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .funnel-metric-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: var(--surface-01);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .funnel-metric-bar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--major-01);
+      cursor: pointer;
+    }
+    .funnel-metric-bar input { margin: 0; accent-color: var(--accent-02); }
+    .header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .meta { display: flex; gap: 8px; margin-bottom: 8px; }
+    .chip { font-size: 10px; text-transform: uppercase; font-weight: 700; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-01); color: var(--muted); }
+    .chip.type { background: rgba(23,150,212,.2); color: #62C0EE; border-color: rgba(98,192,238,.35); }
+
+    /* Buttons & Inputs */
+    button, select, input[type="text"], input[type="date"], input[type="password"] {
+      border: 1px solid var(--border); background: var(--surface-01); color: var(--major-01);
+      border-radius: 6px; padding: 8px 12px; font-size: 13px; font-family: inherit;
+    }
+    button { cursor: pointer; font-weight: 600; }
+    button:hover { background: var(--surface-02); }
+    button.primary { background: var(--accent-02); color: #fff; border-color: transparent; }
+    button.primary:hover { background: #1486bf; }
+    button.primary:disabled { opacity: .5; cursor: not-allowed; }
+    input[type="text"], input[type="date"], input[type="password"] { min-width: 180px; }
+    select { min-width: 140px; }
+    label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; display: block; margin-bottom: 4px; }
+
+    /* Config Panel */
+    .config-panel { background: var(--surface-01); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+    .config-toggle { width: 100%; text-align: left; padding: 14px 20px; background: transparent; border: none; color: var(--major-01); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .config-toggle::after { content: '▼'; font-size: 10px; color: var(--muted); transition: transform .2s; }
+    .config-panel.open .config-toggle::after { transform: rotate(180deg); }
+    .config-body { display: none; padding: 0 20px 20px; }
+    .config-panel.open .config-body { display: block; }
+    .config-section { margin-bottom: 20px; }
+    .config-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-03); margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .config-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+    .config-field { flex: 1; min-width: 180px; }
+    .config-field input, .config-field select { width: 100%; }
+    .offer-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .offer-table th, .offer-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .offer-table th { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+    .offer-table select { width: 100%; }
+    .status-msg { font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-top: 8px; }
+    .status-msg.ok { background: rgba(88,212,23,.1); color: var(--success); }
+    .status-msg.err { background: rgba(252,113,72,.1); color: var(--danger); }
+    .status-msg.loading { background: rgba(23,150,212,.1); color: var(--accent-03); }
+
+    /* Filter Bar */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--surface-01); border: 1px solid var(--border); border-radius: 12px; }
+    .filter-bar label { margin-bottom: 0; }
+    .filter-bar .quick-btn { font-size: 12px; padding: 6px 14px; border-radius: 6px; white-space: nowrap; }
+    .filter-bar .quick-btn.active { background: var(--accent-02); color: #fff; border-color: transparent; }
+    .filter-sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+    /* KPI Grids */
+    .grid4,.grid5,.grid6,.grid8,.grid3 { display: grid; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .grid4 { grid-template-columns: repeat(4,minmax(160px,1fr)); }
+    .grid5 { grid-template-columns: repeat(5,minmax(140px,1fr)); }
+    .grid6 { grid-template-columns: repeat(6,minmax(120px,1fr)); }
+    .grid8 { grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); }
+    .grid3 { grid-template-columns: repeat(3,minmax(200px,1fr)); }
+    .card { background: var(--surface-01); padding: 18px; }
+    .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 700; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+    .kpi-sm { font-size: 21px; }
+    .delta { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .up { color: var(--success); }
+    .warn { color: var(--warning); }
+    .down { color: var(--danger); }
+
+    /* Charts */
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(380px,1fr)); gap: 20px; margin-bottom: 24px; }
+    .chart-panel { background: var(--surface-01); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .chart-panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 12px; font-weight: 700; }
+    canvas { max-height: 280px; }
+
+    /* Tables */
+    .section { background: var(--surface-01); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+    .section-title { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-weight: 700; }
+    .insight1 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+    .insight2 { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--border); font-weight: 700; }
+    td { padding: 9px 10px; border-bottom: 1px solid rgba(34,36,51,.7); }
+    td.r, th.r { text-align: right; }
+    tr.total td { font-weight: 700; border-top: 1px solid var(--border); }
+    .badge { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 8px; display: inline-block; white-space: nowrap; }
+    .ok { background: rgba(88,212,23,.15); color: var(--success); }
+    .attn { background: rgba(255,195,15,.15); color: var(--warning); }
+    .risk { background: rgba(252,113,72,.15); color: var(--danger); }
+
+    /* Split */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .split .section { margin: 0; border: 0; border-radius: 0; }
+
+    /* Footer */
+    .footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 24px; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
+    .empty-state h2 { font-size: 18px; color: var(--major-01); margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; max-width: 480px; margin: 0 auto; }
+
+    ul, ol { padding-left: 18px; line-height: 1.65; }
+    .overflow-x { overflow-x: auto; }
+
+    /* Insights Bar */
+    .insights-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--surface-01); border: 1px solid var(--border); border-radius: 12px; }
+    .insights-bar label { margin-bottom: 0; }
+    .insights-bar input[type="text"] { min-width: 90px; max-width: 120px; }
+    .insights-bar select { min-width: 160px; }
+
+    /* View tabs (Visao geral / Funil) */
+    .view-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { border: 1px solid var(--border); background: var(--surface-01); color: var(--muted); padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .tab-btn:hover { background: var(--surface-02); color: var(--major-01); }
+    .tab-btn.active { background: var(--accent-02); color: #fff; border-color: transparent; }
+
+    /* Insights Section */
+    .insights-section { background: var(--surface-01); border: 1px solid var(--border); border-left: 3px solid var(--accent-04); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .insights-section .section-title { color: var(--accent-04); margin-bottom: 16px; font-size: 13px; }
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .insight-card { background: var(--surface-02); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .insight-card .ic-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+    .insight-card .ic-value { font-size: 22px; font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+    .insight-card .ic-sub { font-size: 11px; color: var(--muted); }
+
+    /* Progress bar */
+    .progress-track { width: 100%; height: 24px; background: var(--surface-02); border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; border: 1px solid var(--border); }
+    .progress-fill { height: 100%; border-radius: 12px; transition: width .6s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 700; color: #fff; min-width: 40px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+
+    /* Insights sub-sections */
+    .ins-block { margin-bottom: 20px; }
+    .ins-block:last-child { margin-bottom: 0; }
+    .ins-block-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent-03); font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+    /* Creative audit table */
+    .tier-tag { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 8px; display: inline-block; }
+    .tier-winner { background: rgba(88,212,23,.15); color: var(--success); }
+    .tier-mediocre { background: rgba(255,195,15,.15); color: var(--warning); }
+    .tier-loser { background: rgba(252,113,72,.15); color: var(--danger); }
+
+    /* Action plan */
+    .action-list { list-style: none; padding-left: 0; counter-reset: action-counter; }
+    .action-item { counter-increment: action-counter; padding: 12px 14px; background: var(--surface-02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
+    .action-item::before { content: counter(action-counter); display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; background: var(--accent-02); color: #fff; border-radius: 50%; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .action-body { flex: 1; }
+    .action-body strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .action-body span { font-size: 11px; color: var(--muted); }
+    .action-impact { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; align-self: center; }
+    .impact-save { background: rgba(88,212,23,.12); color: var(--success); }
+    .impact-add { background: rgba(23,150,212,.12); color: var(--accent-02); }
+    .impact-test { background: rgba(255,195,15,.12); color: var(--warning); }
+
+    /* Day-of-week heatmap */
+    .dow-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
+    .dow-cell { text-align: center; padding: 10px 4px; border-radius: 8px; border: 1px solid var(--border); }
+    .dow-cell .dow-day { font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .dow-cell .dow-val { font-size: 14px; font-weight: 700; }
+    .dow-cell .dow-sub { font-size: 10px; color: var(--muted); }
+
+    @media (max-width: 980px) {
+      .grid4,.grid5,.grid6,.grid8,.grid3,.split { grid-template-columns: 1fr; }
+      .chart-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; }
+      .filter-bar { flex-direction: row; }
+      .the-logo { height: 32px; }
+      .insights-grid { grid-template-columns: 1fr 1fr; }
+      .dow-grid { grid-template-columns: repeat(4, 1fr); }
+      .action-item { flex-direction: column; gap: 8px; }
+      .action-impact { align-self: flex-start; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- CONFIG PANEL -->
+  <div class="config-panel open" id="configPanel">
+    <button class="config-toggle" id="configToggle">Configuracao</button>
+    <div class="config-body">
+
+      <div class="config-section">
+        <h3>Conexao Google Sheets</h3>
+        <div class="config-row">
+          <div class="config-field">
+            <label>API Key</label>
+            <input type="password" id="cfgApiKey" placeholder="AIzaSy..." />
+          </div>
+          <div class="config-field">
+            <label>Spreadsheet ID</label>
+            <input type="text" id="cfgSheetId" value="1VA5dsSBnAjM4Ql3GNrHqzB3KCMlv63f3_Qnhj_Cv8XA" placeholder="ID da planilha (da URL do Google Sheets)" />
+          </div>
+        </div>
+        <div class="config-row">
+          <div class="config-field">
+            <label>Aba vendas (Hubla)</label>
+            <input type="text" id="cfgVendasSheet" value="" placeholder="Nome exato da aba de vendas" />
+          </div>
+          <div class="config-field">
+            <label>Aba Meta Ads</label>
+            <input type="text" id="cfgMetaSheet" value="" placeholder="Nome exato da aba Meta (ex.: metaads_daily)" />
+          </div>
+          <div class="config-field">
+            <label>Nome do cliente</label>
+            <input type="text" id="cfgClientName" value="Lang" />
+          </div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Mapeamento UTM → Meta Ads</h3>
+        <div class="config-row">
+          <div class="config-field">
+            <label>Metodo de match</label>
+            <select id="cfgMatchMethod">
+              <option value="campaign_id">Match por campaign_id</option>
+              <option value="name">Match por nome (contains)</option>
+            </select>
+          </div>
+        </div>
+        <div id="nameMatchFields" style="display:none;">
+          <div class="config-row">
+            <div class="config-field">
+              <label>UTM → campaign_name</label>
+              <select id="cfgUtmCampaign">
+                <option value="utm_campaign" selected>utm_campaign</option>
+                <option value="utm_medium">utm_medium</option>
+                <option value="utm_term">utm_term</option>
+                <option value="utm_content">utm_content</option>
+                <option value="sck">sck</option>
+              </select>
+            </div>
+            <div class="config-field">
+              <label>UTM → adset_name</label>
+              <select id="cfgUtmAdset">
+                <option value="utm_medium" selected>utm_medium</option>
+                <option value="utm_campaign">utm_campaign</option>
+                <option value="utm_term">utm_term</option>
+                <option value="utm_content">utm_content</option>
+                <option value="sck">sck</option>
+              </select>
+            </div>
+            <div class="config-field">
+              <label>UTM → ad_name (criativo)</label>
+              <select id="cfgUtmAd">
+                <option value="utm_content" selected>utm_content</option>
+                <option value="utm_campaign">utm_campaign</option>
+                <option value="utm_medium">utm_medium</option>
+                <option value="utm_term">utm_term</option>
+                <option value="sck">sck</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Categorizacao de ofertas</h3>
+        <div class="overflow-x">
+          <table class="offer-table" id="offerTable">
+            <thead><tr><th>Oferta (nome + category da planilha)</th><th>Categoria</th></tr></thead>
+            <tbody id="offerTableBody"></tbody>
+          </table>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:6px;">As ofertas aparecem apos carregar. A categoria inicial vem da coluna <strong>category</strong> da planilha (mesmas regras do motor); altere aqui apenas para sobrescrever.</p>
+      </div>
+
+      <div class="config-section">
+        <h3>Filtros</h3>
+        <div class="config-row">
+          <div class="config-field">
+            <label>Data inicio</label>
+            <input type="date" id="cfgDateFrom" />
+          </div>
+          <div class="config-field">
+            <label>Data fim</label>
+            <input type="date" id="cfgDateTo" />
+          </div>
+          <div class="config-field">
+            <label>Status vendas</label>
+            <select id="cfgStatus">
+              <option value="paid">Apenas efetivadas (paid/approved/completed)</option>
+              <option value="all">Todos (paid + refunded)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="primary" id="btnSaveConfig">Salvar e carregar</button>
+        <button id="btnExportConfig">Exportar config</button>
+        <div id="statusMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER (periodo + chips + atualizar — titulo no sticky dentro do dashboard) -->
+  <header class="header header-slim" id="mainHeader">
+    <div class="header-slim-left">
+      <div class="meta">
+        <span class="chip type">Dashboard</span>
+        <span class="chip">Perpetuo</span>
+        <span class="chip">Lang</span>
+      </div>
+      <small id="headerMeta">Lang — configure a conexao Google Sheets para carregar os dados.</small>
+    </div>
+    <div class="header-right">
+      <button class="primary" id="btnRefresh" disabled>Atualizar dados</button>
+    </div>
+  </header>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filterBar" style="display:none;">
+    <label style="font-size:12px;color:var(--muted);margin-right:4px;">Periodo:</label>
+    <input type="date" id="filterDateFrom" style="min-width:130px;" />
+    <span style="color:var(--muted);font-size:12px;">a</span>
+    <input type="date" id="filterDateTo" style="min-width:130px;" />
+    <div class="filter-sep"></div>
+    <label style="font-size:12px;color:var(--muted);margin-right:4px;">LaunchTag:</label>
+    <select id="filterLaunchTag" style="min-width:160px;max-width:280px;">
+      <option value="">Todos</option>
+    </select>
+    <div class="filter-sep"></div>
+    <button class="quick-btn" id="btnToday">Hoje</button>
+    <button class="quick-btn" id="btnYesterday">Ontem</button>
+    <button class="quick-btn" id="btnLast7">Ultimos 7 dias</button>
+    <button class="quick-btn" id="btnThisMonth">Este mes</button>
+    <div class="filter-sep"></div>
+    <button class="quick-btn" id="btnClearFilter" style="color:var(--danger);">Limpar</button>
+  </div>
+
+  <!-- INSIGHTS BAR -->
+  <div class="insights-bar" id="insightsBar" style="display:none;">
+    <label style="font-size:12px;color:var(--accent-04);margin-right:2px;font-weight:700;">Insights &amp; Escala</label>
+    <div class="filter-sep"></div>
+    <label>Meta:</label>
+    <select id="insightsTargetType" style="min-width:150px;">
+      <option value="lucro">Lucro do projeto</option>
+      <option value="faturamento">Faturamento liquido</option>
+    </select>
+    <label>R$</label>
+    <input type="text" id="insightsTargetValue" value="10000" style="min-width:90px;max-width:120px;" />
+    <div class="filter-sep"></div>
+    <button class="primary" id="btnGenerateInsights">Gerar Insights</button>
+  </div>
+
+  <!-- DASHBOARD CONTENT -->
+  <div id="dashboardContent" style="display:none;">
+
+    <div id="stickyDashTop" class="sticky-dash-top" style="display:none;" aria-label="Resumo do dashboard">
+      <div class="sticky-dash-inner">
+        <svg class="the-logo the-logo-sticky" viewBox="0 0 142 151" fill="#D9C8B7" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M37.2444 145.078C29.7219 152.392 17.8543 152.734 9.92108 145.868L7.05835 143.392C-1.67471 135.834-2.31092 122.509 5.66075 114.152L29.3679 89.2965C37.2036 81.0824 50.2669 80.9291 58.294 88.9562L70.3321 100.994L94.9043 76.422L71.4543 52.972L61.8919 62.7214C54.0942 70.6743 41.333 70.8214 33.3529 63.0513L6.11275 36.5308C-2.1161 28.5184-2.02491 15.2673 6.31278 7.36827L8.24292 5.53944C16.194-1.99237 28.6971-1.82284 36.4416 5.9213L71.3945 40.8742L99.6426 12.0572C107.637 3.90253 120.797 3.98128 128.691 12.2339L135.767 19.6349C143.364 27.577 143.227 40.135 135.455 47.9063L106.942 76.422L134.941 104.421C142.966 112.446 142.813 125.503 134.603 133.339L128.262 139.394C120.408 146.891 108.036 146.844 100.238 139.29L71.6673 111.614L37.2444 145.078ZM39.2914 56.9544C43.9116 61.4528 51.3014 61.3668 55.8158 56.7621L65.4353 46.953L30.4226 11.9403C25.9388 7.45687 18.6989 7.35861 14.0957 11.7195L12.1681 13.5483C7.34102 18.1214 7.28728 25.7924 12.0512 30.4312L39.2914 56.9544ZM129.436 41.8873C133.935 37.3882 134.016 30.1169 129.618 25.5188L122.539 18.1178C117.969 13.34 110.35 13.2954 105.721 18.0165L77.4136 46.8932L100.923 70.403L129.436 41.8873ZM106.158 133.175C110.673 137.549 117.836 137.575 122.383 133.235L128.727 127.182C133.48 122.645 133.568 115.086 128.922 110.44L100.923 82.441L77.7305 105.634L106.158 133.175ZM15.4907 139.433C20.0835 143.408 26.9535 143.207 31.3085 138.974L64.2481 106.951L52.275 94.9752C47.6277 90.328 40.0637 90.4171 35.5272 95.1727L11.8201 120.025C7.20465 124.864 7.57448 132.579 12.6306 136.955L15.4907 139.433Z"/></svg>
+        <div class="sticky-dash-text">
+          <h1 class="sticky-dash-title">
+            <span class="sticky-brand">Tracking HighEnd</span><span class="sticky-sep"> — </span><span id="clientName" class="sticky-client-name">Carregando...</span>
+          </h1>
+          <small id="stickyUpdated" class="sticky-updated"></small>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-tabs" id="viewTabs" style="display:none;">
+      <button type="button" class="tab-btn active" id="tabMain">Visao geral</button>
+      <button type="button" class="tab-btn" id="tabFunnel">Funil (periodo)</button>
+    </div>
+
+    <div id="dashboardMainView">
+
+    <!-- KPIs Primarios -->
+    <section class="grid5" id="kpiGrid4"></section>
+
+    <!-- KPIs Eficiencia -->
+    <section class="grid8" id="kpiGrid6"></section>
+
+    <!-- Funil Meta (KPIs) -->
+    <section class="section" id="sectionFunnelKpis">
+      <p class="section-title">Funil Meta (periodo)</p>
+      <div class="grid8" id="kpiGridFunnel"></div>
+    </section>
+
+    <!-- Charts -->
+    <div class="chart-grid">
+      <div class="chart-panel">
+        <h2>Faturamento vs Investimento diario</h2>
+        <canvas id="chartRevSpend"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h2>ROAS diario</h2>
+        <canvas id="chartRoas"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h2>Vendas diarias por tipo de oferta</h2>
+        <canvas id="chartSalesByType"></canvas>
+      </div>
+    </div>
+
+    <!-- Insights & Escala -->
+    <section class="insights-section" id="insightsSection" style="display:none;"></section>
+
+    <!-- Faturamento por Oferta -->
+    <section class="section" id="sectionOffer">
+      <p class="section-title">Faturamento por oferta</p>
+      <p class="insight1" id="offerInsight"></p>
+      <div class="overflow-x"><table id="tableOffer"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- Performance por Campanha -->
+    <section class="section" id="sectionCampaign">
+      <p class="section-title">Performance por campanha</p>
+      <p class="insight1" id="campaignInsight"></p>
+      <div class="overflow-x"><table id="tableCampaign"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- Top criativos: ad (Meta) x utm_content (vendas) -->
+    <section class="section" id="sectionCreative">
+      <p class="section-title" id="sectionCreativeTitle">Top criativos (UTM content)</p>
+      <p class="insight1" id="creativeInsight"></p>
+      <div class="overflow-x"><table id="tableCreative"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- Top conjuntos: adset (Meta) x utm_medium (vendas) -->
+    <section class="section" id="sectionAdset">
+      <p class="section-title" id="sectionAdsetTitle">Top conjuntos (utm_medium)</p>
+      <p class="insight1" id="adsetInsight"></p>
+      <div class="overflow-x"><table id="tableAdset"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- Performance por Fonte -->
+    <section class="section" id="sectionSource">
+      <p class="section-title">Performance por fonte</p>
+      <div class="overflow-x"><table id="tableSource"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- Split -->
+    <section class="split" id="splitSection">
+      <article class="section">
+        <p class="section-title">O que aconteceu</p>
+        <ul id="splitWhat"></ul>
+      </article>
+      <article class="section">
+        <p class="section-title">Por que importa</p>
+        <ul id="splitWhy"></ul>
+      </article>
+    </section>
+
+    <!-- Footer -->
+    <p class="footer" id="footerText"></p>
+
+    </div><!-- /dashboardMainView -->
+
+    <div id="funnelView" style="display:none;">
+      <div class="chart-panel" style="margin-bottom:24px;">
+        <h2>Funil Meta — metricas diarias (periodo filtrado)</h2>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Marque as metricas para o grafico. Eixo esquerdo: CTR, Connect, IC/LPV. Eixo direito: conversoes. LPV = landing page view. Rótulos = valor (%) por ponto.</p>
+        <div class="funnel-metric-bar" id="funnelMetricToggles">
+          <label><input type="checkbox" data-funnel-metric="ctr" checked /> CTR %</label>
+          <label><input type="checkbox" data-funnel-metric="connect" checked /> Connect %</label>
+          <label><input type="checkbox" data-funnel-metric="icLpv" checked /> IC/LPV %</label>
+          <label><input type="checkbox" data-funnel-metric="convPageMeta" checked /> Conv. pag. Meta %</label>
+          <label><input type="checkbox" data-funnel-metric="convPageTotal" checked /> Conv. pag. total %</label>
+          <label><input type="checkbox" data-funnel-metric="convCheckoutMeta" checked /> Conv. checkout Meta %</label>
+          <label><input type="checkbox" data-funnel-metric="convCheckoutTotal" checked /> Conv. checkout total %</label>
+        </div>
+        <canvas id="chartFunnelMetrics"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="empty-state">
+    <h2>Dashboard Perpetuo Lang</h2>
+    <p>Configure sua API Key do Google Sheets, o ID da planilha e os nomes das abas; depois clique em "Salvar e carregar".</p>
+  </div>
+
+</div>
+
+<script>
+if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+  Chart.register(ChartDataLabels);
+}
+
+/* ============================================================
+   CONFIG MODULE
+   ============================================================ */
+const STORAGE_KEY = 'the_perpetuo_lang_dashboard_config';
+const OFFER_CATEGORIES = ['Produto Principal','Order Bump 1','Order Bump 2','Order Bump 3','Order Bump 4','Upsell 1','Upsell 2','Downsell 1','Ignorar'];
+const DEFAULT_OFFER_MAP = {};
+const DEFAULT_SHEET_ID = '1VA5dsSBnAjM4Ql3GNrHqzB3KCMlv63f3_Qnhj_Cv8XA';
+const DEFAULT_VENDAS_SHEET = 'vendas';
+const DEFAULT_META_SHEET = 'metaads';
+
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveConfig(cfg) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+}
+function getConfig() {
+  const saved = loadConfig();
+  return {
+    apiKey: saved.apiKey || '',
+    sheetId: saved.sheetId || DEFAULT_SHEET_ID,
+    vendasSheet: saved.vendasSheet || DEFAULT_VENDAS_SHEET,
+    metaSheet: saved.metaSheet || DEFAULT_META_SHEET,
+    clientName: saved.clientName || 'Lang',
+    matchMethod: saved.matchMethod || 'name',
+    utmCampaign: saved.utmCampaign || 'utm_campaign',
+    utmAdset: saved.utmAdset || 'utm_medium',
+    utmAd: saved.utmAd || 'utm_content',
+    offerMap: saved.offerMap || { ...DEFAULT_OFFER_MAP },
+    dateFrom: saved.dateFrom || '',
+    dateTo: saved.dateTo || '',
+    statusFilter: saved.statusFilter || 'paid',
+    insightsTargetType: saved.insightsTargetType || 'lucro',
+    insightsTargetValue: saved.insightsTargetValue || '10000',
+    launchTagFilter: saved.launchTagFilter || ''
+  };
+}
+
+function populateConfigUI(cfg) {
+  $('cfgApiKey').value = cfg.apiKey;
+  $('cfgSheetId').value = cfg.sheetId;
+  $('cfgVendasSheet').value = cfg.vendasSheet;
+  $('cfgMetaSheet').value = cfg.metaSheet;
+  $('cfgClientName').value = cfg.clientName;
+  $('cfgMatchMethod').value = cfg.matchMethod;
+  $('cfgUtmCampaign').value = cfg.utmCampaign;
+  $('cfgUtmAdset').value = cfg.utmAdset;
+  $('cfgUtmAd').value = cfg.utmAd;
+  $('cfgDateFrom').value = cfg.dateFrom;
+  $('cfgDateTo').value = cfg.dateTo;
+  $('cfgStatus').value = cfg.statusFilter;
+  toggleNameFields();
+  $('insightsTargetType').value = cfg.insightsTargetType || 'lucro';
+  $('insightsTargetValue').value = cfg.insightsTargetValue || '10000';
+}
+
+function readConfigFromUI() {
+  return {
+    apiKey: $('cfgApiKey').value.trim(),
+    sheetId: $('cfgSheetId').value.trim(),
+    vendasSheet: $('cfgVendasSheet').value.trim(),
+    metaSheet: $('cfgMetaSheet').value.trim(),
+    clientName: $('cfgClientName').value.trim(),
+    matchMethod: $('cfgMatchMethod').value,
+    utmCampaign: $('cfgUtmCampaign').value,
+    utmAdset: $('cfgUtmAdset').value,
+    utmAd: $('cfgUtmAd').value,
+    offerMap: readOfferMap(),
+    dateFrom: $('cfgDateFrom').value,
+    dateTo: $('cfgDateTo').value,
+    statusFilter: $('cfgStatus').value,
+    insightsTargetType: $('insightsTargetType').value,
+    insightsTargetValue: $('insightsTargetValue').value,
+    launchTagFilter: $('filterLaunchTag') ? $('filterLaunchTag').value.trim() : ''
+  };
+}
+
+function readOfferMap() {
+  const rows = $('offerTableBody').querySelectorAll('tr');
+  if (!rows.length) return loadConfig().offerMap || { ...DEFAULT_OFFER_MAP };
+  const map = {};
+  rows.forEach(r => {
+    const name = r.dataset.offer;
+    const sel = r.querySelector('select');
+    if (name && sel) map[name] = sel.value;
+  });
+  return map;
+}
+
+function renderOfferTable(offerNames, offerMap, vendas) {
+  const tbody = $('offerTableBody');
+  tbody.innerHTML = '';
+  offerNames.forEach(name => {
+    const tr = document.createElement('tr');
+    tr.dataset.offer = name;
+    const cat = resolveOfferTableCategory(name, offerMap, vendas);
+    const opts = offerCategorySelectOptions(cat);
+    tr.innerHTML = `<td>${esc(name)}</td><td><select>${opts.map(c =>
+      `<option${c === cat ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></td>`;
+    tr.querySelector('select').addEventListener('change', () => {
+      const cfg = loadConfig();
+      cfg.offerMap = readOfferMap();
+      saveConfig(cfg);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleNameFields() {
+  $('nameMatchFields').style.display = $('cfgMatchMethod').value === 'name' ? '' : 'none';
+}
+
+/* ============================================================
+   GOOGLE SHEETS API
+   ============================================================ */
+async function fetchSheet(sheetId, sheetName, apiKey) {
+  const range = encodeURIComponent(sheetName);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Sheets API error ${resp.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  return data.values || [];
+}
+
+function rowsToObjects(rows) {
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => String(h).trim());
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+    return obj;
+  });
+}
+
+/* ============================================================
+   LANG: planilha → chaves canônicas do motor (Hubla / metaads_daily)
+   Ajuste os fallbacks abaixo se mudar o export.
+   ============================================================ */
+function sheetValEmpty(v) {
+  return v === undefined || v === null || v === '';
+}
+
+function firstDefinedRow(row, keys) {
+  for (const k of keys) {
+    if (row && !sheetValEmpty(row[k])) return row[k];
+  }
+  return '';
+}
+
+function normalizeOfferCategory(rawCategory) {
+  const c = String(rawCategory || '').trim().toLowerCase();
+  if (!c) return 'Produto Principal';
+  if (c === 'produto principal' || c === 'principal') return 'Produto Principal';
+  if (c === 'order bump 1' || c === 'ob1' || c === 'orderbump1') return 'Order Bump 1';
+  if (c === 'order bump 2' || c === 'ob2' || c === 'orderbump2') return 'Order Bump 2';
+  if (c === 'order bump 3' || c === 'ob3' || c === 'orderbump3') return 'Order Bump 3';
+  if (c === 'order bump 4' || c === 'ob4' || c === 'orderbump4') return 'Order Bump 4';
+  if (c === 'upsell' || c === 'upsell 1' || c === 'up1') return 'Upsell 1';
+  if (c === 'upsell 2' || c === 'up2') return 'Upsell 2';
+  if (c === 'downsell' || c === 'downsell 1' || c === 'ds1') return 'Downsell 1';
+  if (c === 'ignorar' || c === 'ignore') return 'Ignorar';
+  return String(rawCategory || '').trim();
+}
+
+function getOfferDisplayName(v) {
+  const name = String(v.offer_name || v.product_name || '').trim();
+  const catRaw = String(v.category || '').trim();
+  return catRaw ? `${name} — ${catRaw}` : name;
+}
+
+function getOfferCategoryForSale(v, offerMap) {
+  const displayName = getOfferDisplayName(v);
+  const mapped = offerMap[displayName];
+  if (!sheetValEmpty(mapped)) return mapped;
+  return normalizeOfferCategory(v.category);
+}
+
+/** Categoria do select na tabela: override salvo ou inferida da planilha (igual getOfferCategoryForSale sem mapa). */
+function inferDefaultCategoryFromSheet(displayName, vendas) {
+  if (!vendas || !vendas.length) return 'Produto Principal';
+  for (let i = 0; i < vendas.length; i++) {
+    if (getOfferDisplayName(vendas[i]) === displayName) {
+      return normalizeOfferCategory(vendas[i].category);
+    }
+  }
+  return 'Produto Principal';
+}
+
+function resolveOfferTableCategory(displayName, offerMap, vendas) {
+  const saved = offerMap[displayName];
+  if (!sheetValEmpty(saved)) return saved;
+  return inferDefaultCategoryFromSheet(displayName, vendas);
+}
+
+/** Lista de opcoes do select: padrao + valor atual se for custom da planilha. */
+function offerCategorySelectOptions(selected) {
+  const list = OFFER_CATEGORIES.slice();
+  if (selected && !list.includes(selected)) list = [selected, ...list];
+  return list;
+}
+
+/** utm_source → Meta_Ads apenas: metaads, meta_ads, ig, fb (Instagram orgânico fica como "instagram"). */
+const LANG_UTM_SOURCE_AS_META_ADS = new Set(['metaads', 'meta_ads', 'ig', 'fb']);
+
+function normalizeLangUtmSource(raw) {
+  const s = String(raw || '').trim();
+  const low = s.toLowerCase();
+  if (LANG_UTM_SOURCE_AS_META_ADS.has(low)) return 'Meta_Ads';
+  return s;
+}
+
+function normalizeSource(raw) {
+  const s = String(raw || '').trim();
+  const low = s.toLowerCase();
+  if (!low) return 'Não Rastreadas';
+  if (LANG_UTM_SOURCE_AS_META_ADS.has(low)) return 'Meta_Ads';
+  if (low === 'bio') return 'bio';
+  if (low === 'manychat') return 'manychat';
+  if (low === 'hubla') return 'hubla';
+  return s;
+}
+
+function getTransactionKey(v, idx) {
+  const tx = String(v.transaction_ext || '').trim();
+  if (tx) return tx;
+  const fallback = String(v.transaction_id || v.order_id || '').trim();
+  if (fallback) return fallback;
+  return `row-${idx}`;
+}
+
+/**
+ * Lang: datas em update_time; faturamento líquido em price_brl (ver processData).
+ * launch_tag: aliases comuns do export para filtro LaunchTag no painel.
+ */
+function normalizeLangVenda(row) {
+  const out = { ...row };
+  if (sheetValEmpty(out.commision_value_brl) && !sheetValEmpty(row.comission_value_brl)) {
+    out.commision_value_brl = row.comission_value_brl;
+  }
+  const ltRaw = firstDefinedRow(row, ['launch_tag', 'LaunchTag', 'launchtag', 'Launch Tag', 'Launch_Tag']);
+  out.launch_tag = sheetValEmpty(ltRaw) ? '' : String(ltRaw).trim();
+  const ut = row.update_time;
+  if (!sheetValEmpty(ut)) {
+    out.approved_date = ut;
+    out.order_date = ut;
+  }
+  if (sheetValEmpty(out.product_name) && !sheetValEmpty(out.offer_name)) {
+    out.product_name = out.offer_name;
+  }
+  out.utm_source = normalizeLangUtmSource(out.utm_source);
+  return out;
+}
+
+/**
+ * Export Meta Lang (PT) → nomes usados em processData / groupByCampaign.
+ * Cabeçalho "Campanha" é sensível a maiúsculas.
+ */
+function normalizeLangMeta(row) {
+  const out = { ...row };
+  if (sheetValEmpty(out.date) && !sheetValEmpty(row.data)) out.date = row.data;
+  if (!Object.prototype.hasOwnProperty.call(out, 'spend') || sheetValEmpty(out.spend)) {
+    if (Object.prototype.hasOwnProperty.call(row, 'gasto')) out.spend = row.gasto;
+  }
+  if (sheetValEmpty(out.impressions) && !sheetValEmpty(row.impressoes)) out.impressions = row.impressoes;
+  if (sheetValEmpty(out.inline_link_clicks) && !sheetValEmpty(row.clicks)) out.inline_link_clicks = row.clicks;
+  if (sheetValEmpty(out.landing_page_view) && !sheetValEmpty(row.land_page_views)) {
+    out.landing_page_view = row.land_page_views;
+  }
+  if (sheetValEmpty(out.lead) && !sheetValEmpty(row.leads)) out.lead = row.leads;
+  if (sheetValEmpty(out.adset_name) && !sheetValEmpty(row.Conjunto)) out.adset_name = row.Conjunto;
+  if (sheetValEmpty(out.campaign_id) && !sheetValEmpty(row.campaign_id)) out.campaign_id = row.campaign_id;
+  if (sheetValEmpty(out.campaign_name) && !sheetValEmpty(row.Campanha)) out.campaign_name = row.Campanha;
+  if (sheetValEmpty(out.ad_name) && !sheetValEmpty(row.ad)) out.ad_name = row.ad;
+  const ltMeta = firstDefinedRow(row, ['launch_tag', 'LaunchTag', 'launchtag', 'Launch Tag', 'Launch_Tag']);
+  out.launch_tag = sheetValEmpty(ltMeta) ? '' : String(ltMeta).trim();
+  return out;
+}
+
+/* ============================================================
+   DATA ENGINE
+   ============================================================ */
+function parseNum(v) {
+  if (typeof v === 'number') return v;
+  if (!v && v !== 0) return 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  const cleaned = s.replace(/[^\d,.\-]/g, '');
+  if (!cleaned) return 0;
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  let normalized = cleaned;
+  if (lastComma > -1 && lastDot > -1) {
+    normalized = lastComma > lastDot
+      ? cleaned.replace(/\./g, '').replace(',', '.')
+      : cleaned.replace(/,/g, '');
+  } else if (lastComma > -1) {
+    normalized = cleaned.replace(/\./g, '').replace(',', '.');
+  }
+  const n = parseFloat(normalized);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m2) return m2[3] + '-' + m2[2] + '-' + m2[1];
+  /* ISO / Sheets datetime: 2025-03-15 14:30:00 ou 2025-03-15T14:30:00 */
+  const m3 = s.match(/^(\d{4}-\d{2}-\d{2})[T\s]/);
+  if (m3) return m3[1];
+  return null;
+}
+
+function findNumericCampaignId(venda) {
+  const v = String(venda.campaign_id || '');
+  if (/^\d{10,}$/.test(v.trim())) return v.trim();
+  return null;
+}
+
+function processData(rawVendas, rawMeta, cfg) {
+  const EFFECTIVE_STATUS = new Set(['paid', 'approved', 'completed', 'venda']);
+  const REFUND_STATUS = new Set(['refunded']);
+  const KNOWN_NON_EFFECTIVE = new Set(['waiting_payment', 'billet_printed', 'cancelled', 'canceled']);
+  const VALID_STATUS = new Set([...EFFECTIVE_STATUS, ...REFUND_STATUS, ...KNOWN_NON_EFFECTIVE]);
+  const diagnostics = {
+    rawSales: rawVendas.length,
+    statusCountsRaw: {},
+    sourceCountsBeforeFilter: {},
+    afterStatusFilter: 0,
+    afterDateFilter: 0,
+    afterLaunchTagFilter: 0,
+    afterSourceFilter: 0,
+    afterDistinctTx: 0
+  };
+
+  let vendas = rawVendas.map(v => {
+    const platFee = parseNum(v.commission_plataform);
+    const priceBrlRaw = firstDefinedRow(v, ['price_brl', 'Price_BRL']);
+    const hasPriceBrl = !sheetValEmpty(priceBrlRaw);
+    const net = hasPriceBrl ? parseNum(priceBrlRaw) : (parseNum(v.payment_price) - platFee);
+    const grossLegacy = parseNum(v.payment_price);
+    return {
+      ...v,
+      _price: hasPriceBrl ? net : grossLegacy,
+      _platformFee: platFee,
+      _netPrice: net,
+      _date: parseDate(v.update_time || v.approved_date || v.order_date),
+      _source: normalizeSource(firstDefinedRow(v, ['utm_source', 'source', 'src'])),
+      _status: String(v.status || v.src || '').toLowerCase().trim()
+    };
+  });
+
+  /* Handle Hubla column-shift: detect status in non-standard columns.
+     Pipes in utm_medium cause downstream columns to shift, so "paid"/"refunded"
+     may land in src, sck, adset_id, ad_id, or campaign_id instead of status. */
+  vendas.forEach(v => {
+    if (!VALID_STATUS.has(v._status)) {
+      for (const col of Object.keys(v)) {
+        const val = String(v[col] || '').toLowerCase().trim();
+        if (VALID_STATUS.has(val)) { v._status = val; break; }
+      }
+    }
+    if (!VALID_STATUS.has(v._status)) v._status = 'unknown';
+    diagnostics.statusCountsRaw[v._status] = (diagnostics.statusCountsRaw[v._status] || 0) + 1;
+    v._source = normalizeSource(v._source);
+    diagnostics.sourceCountsBeforeFilter[v._source] = (diagnostics.sourceCountsBeforeFilter[v._source] || 0) + 1;
+  });
+
+  if (cfg.statusFilter === 'paid') {
+    vendas = vendas.filter(v => EFFECTIVE_STATUS.has(v._status));
+  } else {
+    /* "Todos" = efetivadas + refunded (não inclui waiting/billet/cancelled/unknown). */
+    vendas = vendas.filter(v => EFFECTIVE_STATUS.has(v._status) || REFUND_STATUS.has(v._status));
+  }
+  diagnostics.afterStatusFilter = vendas.length;
+
+  if (cfg.dateFrom) vendas = vendas.filter(v => !v._date || v._date >= cfg.dateFrom);
+  if (cfg.dateTo) vendas = vendas.filter(v => !v._date || v._date <= cfg.dateTo);
+  diagnostics.afterDateFilter = vendas.length;
+
+  const tagWant = String(cfg.launchTagFilter || '').trim().toLowerCase();
+  if (tagWant) {
+    vendas = vendas.filter(v => String(v.launch_tag || '').trim().toLowerCase() === tagWant);
+  }
+  diagnostics.afterLaunchTagFilter = vendas.length;
+
+  /* Lang: não filtrar vendas por fonte para evitar perda indevida por variação de utm_source. */
+  diagnostics.afterSourceFilter = vendas.length;
+
+  const txMap = {};
+  vendas.forEach((v, idx) => {
+    const key = getTransactionKey(v, idx);
+    const current = txMap[key];
+    if (!current) txMap[key] = v;
+    else {
+      const hasCurrentDate = !!current._date;
+      const hasNewDate = !!v._date;
+      if (!hasCurrentDate && hasNewDate) txMap[key] = v;
+      else if (hasCurrentDate && hasNewDate && v._date > current._date) txMap[key] = v;
+    }
+  });
+  vendas = Object.values(txMap);
+  diagnostics.afterDistinctTx = vendas.length;
+
+  let meta = rawMeta.map(m => ({
+    ...m,
+    _date: parseDate(m.date),
+    _spend: parseNum(m.spend),
+    _impressions: parseNum(m.impressions),
+    _clicks: parseNum(m.inline_link_clicks),
+    _lpv: parseNum(m.landing_page_view),
+    _leads: parseNum(m.lead),
+    _ic: parseNum(m.initiate_checkout),
+    _purchases: parseNum(m.purchase),
+    _cid: String(m.campaign_id || '').trim()
+  }));
+
+  if (cfg.dateFrom) meta = meta.filter(m => !m._date || m._date >= cfg.dateFrom);
+  if (cfg.dateTo) meta = meta.filter(m => !m._date || m._date <= cfg.dateTo);
+  if (tagWant) {
+    meta = meta.filter(m => String(m.launch_tag || '').trim().toLowerCase() === tagWant);
+  }
+
+  const offerNames = [...new Set(vendas.map(v => getOfferDisplayName(v)).filter(Boolean))];
+
+  const totalSpend = meta.reduce((s, m) => s + m._spend, 0);
+  const totalRevenue = vendas.reduce((s, v) => s + v._netPrice, 0);
+  const totalPlatformFee = vendas.reduce((s, v) => s + v._platformFee, 0);
+  const totalSales = vendas.length;
+  const roas = totalSpend > 0 ? totalRevenue / totalSpend : null;
+  const profit = totalRevenue - totalSpend;
+
+  const offerMap = cfg.offerMap || {};
+  const categorized = {};
+  OFFER_CATEGORIES.forEach(c => { categorized[c] = { sales: 0, revenue: 0 }; });
+  vendas.forEach(v => {
+    const cat = getOfferCategoryForSale(v, offerMap);
+    if (!categorized[cat]) categorized[cat] = { sales: 0, revenue: 0 };
+    categorized[cat].sales++;
+    categorized[cat].revenue += v._netPrice;
+  });
+
+  const principalSales = categorized['Produto Principal']?.sales || 0;
+  const ob1Sales = categorized['Order Bump 1']?.sales || 0;
+  const ob2Sales = categorized['Order Bump 2']?.sales || 0;
+  const ob3Sales = categorized['Order Bump 3']?.sales || 0;
+  const ob4Sales = categorized['Order Bump 4']?.sales || 0;
+  const upsell1Sales = categorized['Upsell 1']?.sales || 0;
+  const upsell2Sales = categorized['Upsell 2']?.sales || 0;
+  const downsell1Sales = categorized['Downsell 1']?.sales || 0;
+  const takeRateOB1 = principalSales > 0 ? ob1Sales / principalSales : 0;
+  const takeRateOB2 = principalSales > 0 ? ob2Sales / principalSales : 0;
+  const takeRateOB3 = principalSales > 0 ? ob3Sales / principalSales : 0;
+  const takeRateOB4 = principalSales > 0 ? ob4Sales / principalSales : 0;
+  const takeRateUpsell1 = principalSales > 0 ? upsell1Sales / principalSales : 0;
+  const takeRateUpsell2 = principalSales > 0 ? upsell2Sales / principalSales : 0;
+  const takeRateDownsell1 = principalSales > 0 ? downsell1Sales / principalSales : 0;
+  const cacGeral = totalSales > 0 ? totalSpend / totalSales : 0;
+
+  const principalSalesMetaAds = vendas.filter(v => getOfferCategoryForSale(v, cfg.offerMap || {}) === 'Produto Principal' && v._source === 'Meta_Ads').length;
+  const cpaPrincipal = principalSales > 0 ? totalSpend / principalSales : 0;
+  const cpaPrincipalMeta = principalSalesMetaAds > 0 ? totalSpend / principalSalesMetaAds : 0;
+  const ticketMedio = principalSales > 0 ? totalRevenue / principalSales : 0;
+  const salesMetaAds = vendas.filter(v => v._source === 'Meta_Ads').length;
+  const salesOrganic = vendas.filter(v => v._source !== 'Meta_Ads').length;
+
+  const totalImpressions = meta.reduce((s, m) => s + m._impressions, 0);
+  const totalClicks = meta.reduce((s, m) => s + m._clicks, 0);
+  const totalLpv = meta.reduce((s, m) => s + m._lpv, 0);
+  const totalIc = meta.reduce((s, m) => s + m._ic, 0);
+  const ctr = totalImpressions > 0 ? totalClicks / totalImpressions : null;
+  const connectRate = totalClicks > 0 ? totalLpv / totalClicks : null;
+  const icPerLpv = totalLpv > 0 ? totalIc / totalLpv : null;
+  const convPageMeta = totalLpv > 0 ? principalSalesMetaAds / totalLpv : null;
+  const convPageTotal = totalLpv > 0 ? principalSales / totalLpv : null;
+  const convCheckoutMeta = totalIc > 0 ? principalSalesMetaAds / totalIc : null;
+  const convCheckoutTotal = totalIc > 0 ? principalSales / totalIc : null;
+
+  const byDay = groupByDay(vendas, meta);
+  const byCampaign = groupByCampaign(vendas, meta, cfg);
+  const byCreative = groupByCreative(vendas, meta, cfg);
+  const byAdset = groupByAdset(vendas, meta, cfg);
+  const bySource = groupBySource(vendas);
+  const byOffer = groupByOffer(vendas, offerMap);
+
+  return {
+    vendas, meta, offerNames,
+    kpi: {
+      totalRevenue, totalSpend, totalPlatformFee, roas, profit, totalSales, principalSales, ob1Sales, ob2Sales, ob3Sales, ob4Sales, upsell1Sales, upsell2Sales, downsell1Sales, takeRateOB1, takeRateOB2, takeRateOB3, takeRateOB4, takeRateUpsell1, takeRateUpsell2, takeRateDownsell1, cacGeral, cpaPrincipal, cpaPrincipalMeta, principalSalesMetaAds, ticketMedio, salesMetaAds, salesOrganic,
+      totalImpressions, totalClicks, totalLpv, totalIc, ctr, connectRate, icPerLpv, convPageMeta, convPageTotal, convCheckoutMeta, convCheckoutTotal
+    },
+    categorized, byDay, byCampaign, byCreative, byAdset, bySource, byOffer, diagnostics
+  };
+}
+
+function emptyDayRow() {
+  return {
+    revenue: 0, spend: 0, impressions: 0, clicks: 0, lpv: 0, ic: 0,
+    salesPrincipal: 0, salesPrincipalMeta: 0, salesOB1: 0, salesOB2: 0, salesOB3: 0, salesOB4: 0,
+    salesUpsell1: 0, salesUpsell2: 0, salesDownsell1: 0, salesOther: 0
+  };
+}
+
+function groupByDay(vendas, meta) {
+  const days = {};
+  vendas.forEach(v => {
+    const d = v._date; if (!d) return;
+    if (!days[d]) days[d] = emptyDayRow();
+    days[d].revenue += v._netPrice;
+  });
+  meta.forEach(m => {
+    const d = m._date; if (!d) return;
+    if (!days[d]) days[d] = emptyDayRow();
+    days[d].spend += m._spend;
+    days[d].impressions += m._impressions;
+    days[d].clicks += m._clicks;
+    days[d].lpv += m._lpv;
+    days[d].ic += m._ic;
+  });
+  return Object.entries(days).sort((a, b) => a[0].localeCompare(b[0])).map(([d, v]) => ({ date: d, ...v }));
+}
+
+function groupByCampaign(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
+  const campaigns = {};
+  meta.forEach(m => {
+    const name = String(m.campaign_name || '').trim() || `CID:${m._cid}`;
+    if (!campaigns[name]) {
+      campaigns[name] = { name, spend: 0, impressions: 0, clicks: 0, sales: 0, revenue: 0, principalSales: 0, cid: m._cid };
+    }
+    campaigns[name].spend += m._spend;
+    campaigns[name].impressions += m._impressions;
+    campaigns[name].clicks += m._clicks;
+  });
+
+  const bump = (c, v) => {
+    c.sales++;
+    c.revenue += v._netPrice;
+    if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') c.principalSales++;
+  };
+
+  if (cfg.matchMethod === 'campaign_id') {
+    vendas.forEach(v => {
+      if (v._source !== 'Meta_Ads') return;
+      const vid = findNumericCampaignId(v);
+      if (!vid) return;
+      for (const c of Object.values(campaigns)) {
+        if (c.cid === vid) { bump(c, v); break; }
+      }
+    });
+  } else {
+    vendas.forEach(v => {
+      if (v._source !== 'Meta_Ads') return;
+      const utmVal = String(v.utm_campaign || '').trim().toLowerCase();
+      if (!utmVal) return;
+      for (const c of Object.values(campaigns)) {
+        if (c.name.toLowerCase().includes(utmVal) || utmVal.includes(c.name.toLowerCase())) {
+          bump(c, v);
+          break;
+        }
+      }
+    });
+  }
+  return Object.values(campaigns).sort((a, b) => b.spend - a.spend);
+}
+
+function groupByCreative(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
+  const buckets = {};
+  meta.forEach(m => {
+    const name = String(m.ad_name || '').trim();
+    if (!name) return;
+    if (!buckets[name]) buckets[name] = { name, spend: 0, sales: 0, revenue: 0, principalSales: 0 };
+    buckets[name].spend += m._spend;
+  });
+
+  vendas.forEach(v => {
+    if (v._source !== 'Meta_Ads') return;
+    const utmVal = String(v.utm_content || '').trim().toLowerCase();
+    if (!utmVal) return;
+    for (const a of Object.values(buckets)) {
+      if (a.name.toLowerCase().includes(utmVal) || utmVal.includes(a.name.toLowerCase())) {
+        a.sales++;
+        a.revenue += v._netPrice;
+        if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') a.principalSales++;
+        break;
+      }
+    }
+  });
+  return Object.values(buckets).sort((a, b) => b.sales - a.sales).slice(0, 10);
+}
+
+/** Conjunto (Meta adset_name) x utm_medium (vendas), mesmo critério de contains do README. */
+function groupByAdset(vendas, meta, cfg) {
+  const offerMap = cfg.offerMap || {};
+  const buckets = {};
+  meta.forEach(m => {
+    const name = String(m.adset_name || '').trim();
+    if (!name) return;
+    if (!buckets[name]) buckets[name] = { name, spend: 0, sales: 0, revenue: 0, principalSales: 0 };
+    buckets[name].spend += m._spend;
+  });
+
+  vendas.forEach(v => {
+    if (v._source !== 'Meta_Ads') return;
+    const utmVal = String(v.utm_medium || '').trim().toLowerCase();
+    if (!utmVal) return;
+    for (const a of Object.values(buckets)) {
+      if (a.name.toLowerCase().includes(utmVal) || utmVal.includes(a.name.toLowerCase())) {
+        a.sales++;
+        a.revenue += v._netPrice;
+        if (getOfferCategoryForSale(v, offerMap) === 'Produto Principal') a.principalSales++;
+        break;
+      }
+    }
+  });
+  return Object.values(buckets).sort((a, b) => b.spend - a.spend).slice(0, 10);
+}
+
+function groupBySource(vendas) {
+  const sources = {};
+  vendas.forEach(v => {
+    const s = v._source || 'Não Rastreadas';
+    if (!sources[s]) sources[s] = { source: s, sales: 0, revenue: 0 };
+    sources[s].sales++;
+    sources[s].revenue += v._netPrice;
+  });
+  return Object.values(sources).sort((a, b) => b.revenue - a.revenue);
+}
+
+function groupByOffer(vendas, offerMap) {
+  const offers = {};
+  vendas.forEach(v => {
+    const name = getOfferDisplayName(v);
+    const cat = getOfferCategoryForSale(v, offerMap);
+    if (!offers[name]) offers[name] = { name, category: cat, sales: 0, revenue: 0 };
+    offers[name].sales++;
+    offers[name].revenue += v._netPrice;
+  });
+  return Object.values(offers).sort((a, b) => b.revenue - a.revenue);
+}
+
+/* ============================================================
+   UI RENDERING
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtBRL = v => v != null ? 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+const fmtNum = v => v != null ? v.toLocaleString('pt-BR') : '—';
+const fmtPct = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+
+function roasColor(roas) {
+  if (roas == null) return 'var(--muted)';
+  if (roas >= 2.0) return '#58D417';
+  if (roas >= 1.5) return '#8AE04A';
+  if (roas >= 1.0) return '#FFC30F';
+  if (roas >= 0.5) return '#FC9A48';
+  return '#FC7148';
+}
+
+function renderKPIs(kpi) {
+  const semaforoColor = kpi.roas == null ? 'var(--muted)' : kpi.roas >= 1.5 ? 'var(--success)' : kpi.roas >= 1.0 ? 'var(--warning)' : 'var(--danger)';
+  const semaforoText = kpi.roas == null ? '—' : kpi.roas >= 1.5 ? 'Saudavel' : kpi.roas >= 1.0 ? 'Atencao' : 'Critico';
+  const semaforoClass = kpi.roas == null ? '' : kpi.roas >= 1.5 ? 'up' : kpi.roas >= 1.0 ? 'warn' : 'down';
+  const profitClass = kpi.profit >= 0 ? 'up' : 'down';
+  const roasClr = roasColor(kpi.roas);
+
+  $('kpiGrid4').innerHTML = `
+    <article class="card"><div class="kpi-label">Faturamento liquido</div><div class="kpi-value">${fmtBRL(kpi.totalRevenue)}</div><div class="delta">${fmtNum(kpi.totalSales)} vendas · Taxa plat.: ${fmtBRL(kpi.totalPlatformFee)}</div></article>
+    <article class="card"><div class="kpi-label">Investimento do periodo</div><div class="kpi-value">${fmtBRL(kpi.totalSpend)}</div><div class="delta">Meta Ads</div></article>
+    <article class="card"><div class="kpi-label">ROAS</div><div class="kpi-value" style="color:${roasClr}">${kpi.roas != null ? kpi.roas.toFixed(2) : '—'}</div><div class="delta">Faturamento / Investimento</div></article>
+    <article class="card"><div class="kpi-label">Lucro</div><div class="kpi-value ${profitClass}">${fmtBRL(kpi.profit)}</div><div class="delta ${profitClass}">${kpi.profit >= 0 ? 'Positivo' : 'Negativo'}</div></article>
+    <article class="card"><div class="kpi-label">Semaforo</div><div class="kpi-value kpi-sm" style="color:${semaforoColor}">${semaforoText}</div><div class="delta ${semaforoClass}">${kpi.roas != null ? 'ROAS ' + kpi.roas.toFixed(2) : 'Sem dados de investimento'}</div></article>
+  `;
+
+  $('kpiGrid6').innerHTML = `
+    <article class="card"><div class="kpi-label">Vendas Principal</div><div class="kpi-value kpi-sm">${fmtNum(kpi.principalSales)}</div><div class="delta">Produto principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas Meta Ads</div><div class="kpi-value kpi-sm">${fmtNum(kpi.salesMetaAds)}</div><div class="delta">Trafego pago</div></article>
+    <article class="card"><div class="kpi-label">Vendas Organico</div><div class="kpi-value kpi-sm">${fmtNum(kpi.salesOrganic)}</div><div class="delta">Bio + outros</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB1</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob1Sales)}</div><div class="delta">Order Bump 1</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB2</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob2Sales)}</div><div class="delta">Order Bump 2</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB1)}</div><div class="delta">OB1 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB2</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB2)}</div><div class="delta">OB2 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB3</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob3Sales)}</div><div class="delta">Order Bump 3</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB3</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB3)}</div><div class="delta">OB3 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas OB4</div><div class="kpi-value kpi-sm">${fmtNum(kpi.ob4Sales)}</div><div class="delta">Order Bump 4</div></article>
+    <article class="card"><div class="kpi-label">Take rate OB4</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateOB4)}</div><div class="delta">OB4 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Vendas Upsell 1</div><div class="kpi-value kpi-sm">${fmtNum(kpi.upsell1Sales)}</div><div class="delta">Upsell 1</div></article>
+    <article class="card"><div class="kpi-label">Vendas Upsell 2</div><div class="kpi-value kpi-sm">${fmtNum(kpi.upsell2Sales)}</div><div class="delta">Upsell 2</div></article>
+    <article class="card"><div class="kpi-label">Vendas Downsell 1</div><div class="kpi-value kpi-sm">${fmtNum(kpi.downsell1Sales)}</div><div class="delta">Downsell 1</div></article>
+    <article class="card"><div class="kpi-label">Take rate Upsell 1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateUpsell1)}</div><div class="delta">Upsell 1 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Take rate Upsell 2</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateUpsell2)}</div><div class="delta">Upsell 2 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Take rate Downsell 1</div><div class="kpi-value kpi-sm">${fmtPct(kpi.takeRateDownsell1)}</div><div class="delta">Downsell 1 / Principal</div></article>
+    <article class="card"><div class="kpi-label">Ticket Medio</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.ticketMedio)}</div><div class="delta">Fat. / ${fmtNum(kpi.principalSales)} vendas princ.</div></article>
+    <article class="card"><div class="kpi-label">CAC geral</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.cacGeral)}</div><div class="delta">Invest / vendas totais</div></article>
+    <article class="card"><div class="kpi-label">CPA Principal</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.cpaPrincipal)}</div><div class="delta">Invest / ${fmtNum(kpi.principalSales)} vendas princ.</div></article>
+    <article class="card"><div class="kpi-label">CPA Princ. Meta Ads</div><div class="kpi-value kpi-sm">${fmtBRL(kpi.cpaPrincipalMeta)}</div><div class="delta">Invest / ${fmtNum(kpi.principalSalesMetaAds)} vendas Meta</div></article>
+  `;
+}
+
+function fmtPctFromRatio(v) {
+  if (v == null || (typeof v === 'number' && isNaN(v))) return '—';
+  return (v * 100).toFixed(2) + '%';
+}
+
+function renderFunnelKPIs(kpi) {
+  $('kpiGridFunnel').innerHTML = `
+    <article class="card"><div class="kpi-label">CTR</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.ctr)}</div><div class="delta">Cliques / Impressoes · ${fmtNum(kpi.totalClicks)} / ${fmtNum(kpi.totalImpressions)}</div></article>
+    <article class="card"><div class="kpi-label">Connect Rate</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.connectRate)}</div><div class="delta">LPV / Cliques · ${fmtNum(kpi.totalLpv)} / ${fmtNum(kpi.totalClicks)}</div></article>
+    <article class="card"><div class="kpi-label">Ida Checkout Tráfego</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.icPerLpv)}</div><div class="delta">Initiate Checkout / LPV · ${fmtNum(kpi.totalIc)} / ${fmtNum(kpi.totalLpv)}</div></article>
+    <article class="card"><div class="kpi-label">Conv. Pagina Meta</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.convPageMeta)}</div><div class="delta">Principal Meta / LPV · ${fmtNum(kpi.principalSalesMetaAds)} vendas</div></article>
+    <article class="card"><div class="kpi-label">Conv. Pagina Total</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.convPageTotal)}</div><div class="delta">Principal total / LPV · ${fmtNum(kpi.principalSales)} vendas</div></article>
+    <article class="card"><div class="kpi-label">Conv. Checkout Meta</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.convCheckoutMeta)}</div><div class="delta">Principal Meta / Initiate Checkout</div></article>
+    <article class="card"><div class="kpi-label">Conv. Checkout Total</div><div class="kpi-value kpi-sm">${fmtPctFromRatio(kpi.convCheckoutTotal)}</div><div class="delta">Principal total / Initiate Checkout</div></article>
+  `;
+}
+
+let chartInstances = [];
+let funnelChartInstance = null;
+function destroyFunnelChart() {
+  if (funnelChartInstance) { funnelChartInstance.destroy(); funnelChartInstance = null; }
+}
+function destroyCharts() {
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+  destroyFunnelChart();
+}
+
+function renderCharts(byDay, kpi) {
+  destroyCharts();
+  if (!byDay.length) return;
+
+  const labels = byDay.map(d => d.date.slice(5));
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: true,
+    plugins: {
+      legend: { labels: { color: '#8E92AD', font: { size: 11 } } },
+      datalabels: { display: false }
+    },
+    scales: {
+      x: { ticks: { color: '#8E92AD', maxRotation: 45, font: { size: 10 } }, grid: { color: 'rgba(34,36,51,.5)' } },
+      y: { ticks: { color: '#8E92AD', font: { size: 10 } }, grid: { color: 'rgba(34,36,51,.5)' }, beginAtZero: true }
+    }
+  };
+
+  chartInstances.push(new Chart($('chartRevSpend'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Faturamento', data: byDay.map(d => d.revenue), borderColor: '#58D417', backgroundColor: 'rgba(88,212,23,.1)', tension: .3, fill: true },
+        { label: 'Investimento', data: byDay.map(d => d.spend), borderColor: '#FC7148', backgroundColor: 'rgba(252,113,72,.1)', tension: .3, fill: true }
+      ]
+    },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: c => c.dataset.label + ': R$ ' + c.parsed.y.toFixed(2) } } } }
+  }));
+
+  chartInstances.push(new Chart($('chartRoas'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'ROAS', data: byDay.map(d => d.spend > 0 ? d.revenue / d.spend : null), borderColor: '#1796D4', backgroundColor: 'rgba(23,150,212,.1)', tension: .3, fill: true, spanGaps: true },
+        { label: 'Break-even', data: byDay.map(() => 1), borderColor: 'rgba(255,195,15,.5)', borderDash: [6, 3], pointRadius: 0, fill: false }
+      ]
+    },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + (c.parsed.y != null ? c.parsed.y.toFixed(2) : '—') } } } }
+  }));
+
+  chartInstances.push(new Chart($('chartSalesByType'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Principal', data: byDay.map(d => d.salesPrincipal), backgroundColor: 'rgba(23,150,212,.7)' },
+        { label: 'OB1', data: byDay.map(d => d.salesOB1), backgroundColor: 'rgba(255,195,15,.7)' },
+        { label: 'OB2', data: byDay.map(d => d.salesOB2), backgroundColor: 'rgba(98,192,238,.7)' },
+        { label: 'OB3', data: byDay.map(d => d.salesOB3), backgroundColor: 'rgba(23,150,212,.55)' },
+        { label: 'OB4', data: byDay.map(d => d.salesOB4), backgroundColor: 'rgba(98,192,238,.45)' },
+        { label: 'Upsell 1', data: byDay.map(d => d.salesUpsell1), backgroundColor: 'rgba(126,87,194,.7)' },
+        { label: 'Upsell 2', data: byDay.map(d => d.salesUpsell2), backgroundColor: 'rgba(180,130,220,.7)' },
+        { label: 'Downsell 1', data: byDay.map(d => d.salesDownsell1), backgroundColor: 'rgba(255,138,101,.7)' }
+      ]
+    },
+    options: { ...chartDefaults, scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: true }, y: { ...chartDefaults.scales.y, stacked: true } } }
+  }));
+}
+
+function buildFunnelDailySeries(byDay) {
+  return byDay.map(d => {
+    const imp = d.impressions || 0, cl = d.clicks || 0, lpv = d.lpv || 0, ic = d.ic || 0;
+    const sp = d.salesPrincipal || 0, spm = d.salesPrincipalMeta || 0;
+    return {
+      ctr: imp > 0 ? (cl / imp) * 100 : null,
+      connect: cl > 0 ? (lpv / cl) * 100 : null,
+      icLpv: lpv > 0 ? (ic / lpv) * 100 : null,
+      convPageMeta: lpv > 0 ? (spm / lpv) * 100 : null,
+      convPageTotal: lpv > 0 ? (sp / lpv) * 100 : null,
+      convCheckoutMeta: ic > 0 ? (spm / ic) * 100 : null,
+      convCheckoutTotal: ic > 0 ? (sp / ic) * 100 : null
+    };
+  });
+}
+
+const FUNNEL_METRIC_ORDER = ['ctr', 'connect', 'icLpv', 'convPageMeta', 'convPageTotal', 'convCheckoutMeta', 'convCheckoutTotal'];
+const FUNNEL_METRIC_SPECS = {
+  ctr: { label: 'CTR %', yAxisID: 'y', borderColor: '#1796D4', backgroundColor: 'rgba(23,150,212,.08)', field: 'ctr' },
+  connect: { label: 'Connect %', yAxisID: 'y', borderColor: '#62C0EE', backgroundColor: 'transparent', field: 'connect' },
+  icLpv: { label: 'IC/LPV %', yAxisID: 'y', borderColor: '#FFC30F', backgroundColor: 'transparent', field: 'icLpv' },
+  convPageMeta: { label: 'Conv Pag Meta %', yAxisID: 'y1', borderColor: '#58D417', backgroundColor: 'transparent', field: 'convPageMeta' },
+  convPageTotal: { label: 'Conv Pag Total %', yAxisID: 'y1', borderColor: '#8AE04A', backgroundColor: 'transparent', field: 'convPageTotal' },
+  convCheckoutMeta: { label: 'Conv Check Meta %', yAxisID: 'y1', borderColor: '#FC7148', backgroundColor: 'transparent', field: 'convCheckoutMeta' },
+  convCheckoutTotal: { label: 'Conv Check Total %', yAxisID: 'y1', borderColor: '#CC9900', backgroundColor: 'transparent', field: 'convCheckoutTotal' }
+};
+
+function getSelectedFunnelMetrics() {
+  const bar = $('funnelMetricToggles');
+  if (!bar) return FUNNEL_METRIC_ORDER.slice();
+  const checked = [...bar.querySelectorAll('input[data-funnel-metric]:checked')]
+    .map(i => i.getAttribute('data-funnel-metric'))
+    .filter(k => k && FUNNEL_METRIC_SPECS[k]);
+  return checked.length ? checked : ['ctr'];
+}
+
+function renderFunnelChart(byDay) {
+  destroyFunnelChart();
+  const canvas = $('chartFunnelMetrics');
+  if (!canvas || !byDay.length) return;
+
+  const labels = byDay.map(d => d.date.slice(5));
+  const s = buildFunnelDailySeries(byDay);
+  const selected = getSelectedFunnelMetrics();
+  const orderedKeys = FUNNEL_METRIC_ORDER.filter(k => selected.includes(k));
+
+  const datasets = orderedKeys.map(key => {
+    const spec = FUNNEL_METRIC_SPECS[key];
+    return {
+      label: spec.label,
+      data: s.map(x => x[spec.field]),
+      yAxisID: spec.yAxisID,
+      borderColor: spec.borderColor,
+      backgroundColor: spec.backgroundColor,
+      tension: .25,
+      fill: false,
+      spanGaps: true,
+      pointRadius: 2
+    };
+  });
+
+  const hasY = datasets.some(d => d.yAxisID === 'y');
+  const hasY1 = datasets.some(d => d.yAxisID === 'y1');
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { labels: { color: '#8E92AD', font: { size: 10 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            return ctx.dataset.label + ': ' + (v != null && !isNaN(v) ? v.toFixed(2) + '%' : '—');
+          }
+        }
+      },
+      datalabels: {
+        color: '#D9C8B7',
+        font: { size: 8, weight: '600' },
+        formatter: v => (v != null && !isNaN(+v) ? Number(v).toFixed(1) + '%' : ''),
+        display: 'auto',
+        clamp: true
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#8E92AD', maxRotation: 45, font: { size: 10 } }, grid: { color: 'rgba(34,36,51,.5)' } },
+      y: {
+        type: 'linear',
+        position: 'left',
+        display: hasY,
+        title: { display: hasY, text: 'CTR / Connect / IC-LPV (%)', color: '#8E92AD', font: { size: 10 } },
+        ticks: { color: '#8E92AD', font: { size: 10 } },
+        grid: { color: 'rgba(34,36,51,.5)', drawOnChartArea: hasY },
+        beginAtZero: true
+      },
+      y1: {
+        type: 'linear',
+        position: 'right',
+        display: hasY1,
+        title: { display: hasY1, text: 'Conversoes (%)', color: '#8E92AD', font: { size: 10 } },
+        ticks: { color: '#8E92AD', font: { size: 10 } },
+        grid: { drawOnChartArea: false },
+        beginAtZero: true
+      }
+    }
+  };
+
+  funnelChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: chartOptions
+  });
+}
+
+let activeDashboardView = 'main';
+function setDashboardView(view) {
+  activeDashboardView = view;
+  const main = $('dashboardMainView');
+  const funnel = $('funnelView');
+  const tabMain = $('tabMain');
+  const tabFunnel = $('tabFunnel');
+  if (view === 'funnel') {
+    main.style.display = 'none';
+    funnel.style.display = 'block';
+    tabMain.classList.remove('active');
+    tabFunnel.classList.add('active');
+    if (window._lastFinalData && window._lastFinalData.byDay) {
+      renderFunnelChart(window._lastFinalData.byDay);
+    }
+  } else {
+    main.style.display = 'block';
+    funnel.style.display = 'none';
+    tabMain.classList.add('active');
+    tabFunnel.classList.remove('active');
+    destroyFunnelChart();
+  }
+}
+
+function roasBadge(roas) {
+  if (roas == null) return '';
+  const clr = roasColor(roas);
+  return `<span class="badge" style="background:${clr}22;color:${clr}">ROAS ${roas.toFixed(2)}</span>`;
+}
+
+function renderTableOffer(byOffer, kpi) {
+  const total = byOffer.reduce((s, o) => s + o.revenue, 0);
+  const topOffer = byOffer[0];
+  $('offerInsight').textContent = topOffer ? `${topOffer.name} lidera com ${fmtPct(total > 0 ? topOffer.revenue / total : 0)} da receita.` : '';
+  const thead = `<tr><th>Oferta</th><th>Categoria</th><th class="r">Vendas</th><th class="r">Faturamento</th><th class="r">% Receita</th><th class="r">Ticket Medio</th></tr>`;
+  const rows = byOffer.map(o =>
+    `<tr><td>${esc(o.name)}</td><td>${esc(o.category)}</td><td class="r">${fmtNum(o.sales)}</td><td class="r">${fmtBRL(o.revenue)}</td><td class="r">${fmtPct(total > 0 ? o.revenue / total : 0)}</td><td class="r">${fmtBRL(o.sales > 0 ? o.revenue / o.sales : 0)}</td></tr>`
+  ).join('');
+  const totalRow = `<tr class="total"><td>Total</td><td></td><td class="r">${fmtNum(kpi.totalSales)}</td><td class="r">${fmtBRL(total)}</td><td class="r">100%</td><td class="r">${fmtBRL(kpi.totalSales > 0 ? total / kpi.totalSales : 0)}</td></tr>`;
+  $('tableOffer').innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
+}
+
+/** Mesma estrutura que Performance por campanha: 1ª coluna = nome; ordem Invest., Vendas, Vendas princ., CPA princ., Fat., Lucro, ROAS, Status + linha Total. */
+function renderPerformanceBreakdownTable(tableEl, firstColumnLabel, items) {
+  const filtered = items.filter(c => c.spend > 0);
+  const totalSpend = filtered.reduce((s, c) => s + c.spend, 0);
+  const totalSales = filtered.reduce((s, c) => s + c.sales, 0);
+  const totalPrincipal = filtered.reduce((s, c) => s + (c.principalSales || 0), 0);
+  const totalRev = filtered.reduce((s, c) => s + c.revenue, 0);
+  const totalProfit = totalRev - totalSpend;
+  const thead = `<tr><th>${esc(firstColumnLabel)}</th><th class="r">Invest.</th><th class="r">Vendas</th><th class="r">Vendas princ.</th><th class="r">CPA princ.</th><th class="r">Fat.</th><th class="r">Lucro</th><th class="r">ROAS</th><th>Status</th></tr>`;
+  const rows = filtered.map(c => {
+    const ps = c.principalSales || 0;
+    const cpaP = ps > 0 ? c.spend / ps : null;
+    const r = c.spend > 0 ? c.revenue / c.spend : null;
+    const lucro = c.revenue - c.spend;
+    const lucroClass = lucro >= 0 ? 'up' : 'down';
+    return `<tr><td>${esc(c.name)}</td><td class="r">${fmtBRL(c.spend)}</td><td class="r">${fmtNum(c.sales)}</td><td class="r">${fmtNum(ps)}</td><td class="r">${cpaP != null ? fmtBRL(cpaP) : '—'}</td><td class="r">${fmtBRL(c.revenue)}</td><td class="r ${lucroClass}">${fmtBRL(lucro)}</td><td class="r" style="color:${roasColor(r)}">${r != null ? r.toFixed(2) : '—'}</td><td>${roasBadge(r)}</td></tr>`;
+  }).join('');
+  const totalRoas = totalSpend > 0 ? totalRev / totalSpend : null;
+  const totalCpaP = totalPrincipal > 0 ? totalSpend / totalPrincipal : null;
+  const profitClass = totalProfit >= 0 ? 'up' : 'down';
+  const totalRow = `<tr class="total"><td>Total</td><td class="r">${fmtBRL(totalSpend)}</td><td class="r">${fmtNum(totalSales)}</td><td class="r">${fmtNum(totalPrincipal)}</td><td class="r">${totalCpaP != null ? fmtBRL(totalCpaP) : '—'}</td><td class="r">${fmtBRL(totalRev)}</td><td class="r ${profitClass}">${fmtBRL(totalProfit)}</td><td class="r" style="color:${roasColor(totalRoas)}">${totalRoas != null ? totalRoas.toFixed(2) : '—'}</td><td></td></tr>`;
+  tableEl.innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
+}
+
+function renderTableCampaign(byCampaign) {
+  const topC = byCampaign.find(c => c.sales > 0);
+  $('campaignInsight').textContent = topC ? `Campanha ${topC.name} concentra volume.` : 'Nenhuma venda atribuida a campanhas.';
+  renderPerformanceBreakdownTable($('tableCampaign'), 'Campanha', byCampaign);
+}
+
+function renderTableCreative(byCreative) {
+  const top = byCreative[0];
+  const titleEl = $('sectionCreativeTitle');
+  if (titleEl) titleEl.textContent = 'Top criativos (UTM content)';
+  $('creativeInsight').textContent = top && top.sales > 0
+    ? `${top.name} lidera com ${top.sales} vendas.`
+    : 'Match por criativo usa ad (Meta) x utm_content (vendas).';
+  renderPerformanceBreakdownTable($('tableCreative'), 'Anuncio', byCreative);
+}
+
+function renderTableAdset(byAdset) {
+  const top = byAdset[0];
+  const titleEl = $('sectionAdsetTitle');
+  if (titleEl) titleEl.textContent = 'Top conjuntos (utm_medium)';
+  $('adsetInsight').textContent = top && top.spend > 0
+    ? (top.sales > 0 ? `${top.name} lidera em investimento com ${fmtNum(top.sales)} vendas.` : `${top.name} concentra investimento; confira match utm_medium.`)
+    : 'Match por conjunto usa adset (Meta) x utm_medium (vendas).';
+  renderPerformanceBreakdownTable($('tableAdset'), 'Conjunto', byAdset);
+}
+
+function renderTableSource(bySource, kpi) {
+  const total = bySource.reduce((s, x) => s + x.revenue, 0);
+  const thead = `<tr><th>Fonte</th><th class="r">Vendas</th><th class="r">Faturamento</th><th class="r">% do Total</th></tr>`;
+  const rows = bySource.map(s =>
+    `<tr><td>${esc(s.source)}</td><td class="r">${fmtNum(s.sales)}</td><td class="r">${fmtBRL(s.revenue)}</td><td class="r">${fmtPct(total > 0 ? s.revenue / total : 0)}</td></tr>`
+  ).join('');
+  const totalRow = `<tr class="total"><td>Total</td><td class="r">${fmtNum(kpi.totalSales)}</td><td class="r">${fmtBRL(total)}</td><td class="r">100%</td></tr>`;
+  $('tableSource').innerHTML = `<thead>${thead}</thead><tbody>${rows}${totalRow}</tbody>`;
+}
+
+function renderSplit(kpi, byCampaign, bySource) {
+  const what = [];
+  what.push(`<li>O periodo registrou <strong>${fmtNum(kpi.totalSales)} vendas</strong> com faturamento de <strong>${fmtBRL(kpi.totalRevenue)}</strong>.</li>`);
+  if (kpi.totalSpend > 0) what.push(`<li>Investimento total de <strong>${fmtBRL(kpi.totalSpend)}</strong> resultando em ROAS <strong>${kpi.roas != null ? kpi.roas.toFixed(2) : '—'}</strong>.</li>`);
+  const metaSrc = bySource.find(s => s.source === 'Meta_Ads');
+  const orgSrc = bySource.filter(s => s.source !== 'Meta_Ads');
+  if (metaSrc) what.push(`<li>Meta Ads respondeu por <strong>${fmtNum(metaSrc.sales)} vendas</strong> (${fmtPct(kpi.totalSales > 0 ? metaSrc.sales / kpi.totalSales : 0)}).</li>`);
+  if (orgSrc.length) what.push(`<li>Fontes organicas/outras: ${orgSrc.map(s => `${s.source} (${fmtNum(s.sales)})`).join(', ')}.</li>`);
+  if (kpi.ob1Sales > 0 || kpi.ob2Sales > 0 || kpi.ob3Sales > 0 || kpi.ob4Sales > 0) {
+    what.push(`<li>Take rate OB1–OB4: <strong>${fmtPct(kpi.takeRateOB1)}</strong> | <strong>${fmtPct(kpi.takeRateOB2)}</strong> | <strong>${fmtPct(kpi.takeRateOB3)}</strong> | <strong>${fmtPct(kpi.takeRateOB4)}</strong>.</li>`);
+  }
+  if (kpi.upsell1Sales > 0 || kpi.upsell2Sales > 0) {
+    what.push(`<li>Take rate Upsell 1/2: <strong>${fmtPct(kpi.takeRateUpsell1)}</strong> | <strong>${fmtPct(kpi.takeRateUpsell2)}</strong>.</li>`);
+  }
+  $('splitWhat').innerHTML = what.join('');
+
+  const why = [];
+  if (kpi.roas != null && kpi.roas < 1) why.push(`<li>ROAS abaixo de 1 indica que o investimento nao esta se pagando; necessario otimizar campanhas ou reduzir verba em blocos ineficientes.</li>`);
+  else if (kpi.roas != null && kpi.roas >= 1 && kpi.roas < 1.5) why.push(`<li>ROAS entre 1 e 1.5 — operacao esta proxima do break-even. Pequenas otimizacoes em criativos ou segmentacao podem gerar margem.</li>`);
+  else if (kpi.roas != null && kpi.roas >= 1.5) why.push(`<li>ROAS acima de 1.5 indica operacao saudavel. Oportunidade de escalar mantendo eficiencia.</li>`);
+  if (kpi.takeRateOB1 > 0.3) why.push(`<li>Take rate de OB1 alto (${fmtPct(kpi.takeRateOB1)}) mostra boa aceitacao — considerar testar preco mais alto ou novo OB.</li>`);
+  if (kpi.takeRateOB1 < 0.15 && kpi.ob1Sales > 0) why.push(`<li>Take rate de OB1 baixo (${fmtPct(kpi.takeRateOB1)}) — revisar copy/oferta do order bump.</li>`);
+  const topCamp = byCampaign.filter(c => c.spend > 0 && c.revenue > 0).sort((a, b) => (b.revenue / b.spend) - (a.revenue / a.spend))[0];
+  if (topCamp) why.push(`<li>Campanha mais eficiente: <strong>${topCamp.name}</strong> com ROAS ${(topCamp.revenue / topCamp.spend).toFixed(2)} — candidata a escala.</li>`);
+  if (!why.length) why.push(`<li>Dados insuficientes para gerar insights automaticos. Verifique as configuracoes de mapeamento.</li>`);
+  $('splitWhy').innerHTML = why.join('');
+}
+
+/* ============================================================
+   INSIGHTS & ESCALA ENGINE
+   ============================================================ */
+function generateInsights(finalData, cfg) {
+  const targetType = $('insightsTargetType').value;
+  const targetValue = parseFloat(String($('insightsTargetValue').value).replace(/\./g,'').replace(',','.')) || 10000;
+
+  const kpi = finalData.kpi;
+  const byDay = finalData.byDay;
+  const byCreative = finalData.byCreative;
+  const bySource = finalData.bySource;
+  const vendas = finalData.vendas;
+
+  const totalPlatformFee = kpi.totalPlatformFee || 0;
+
+  /* --- a) Projection engine --- */
+  const activeDays = byDay.filter(d => d.revenue > 0 || d.spend > 0).length;
+  const daysForProjection = Math.max(activeDays, 1);
+  const avgRevenue = kpi.totalRevenue / daysForProjection;
+  const avgSpend = kpi.totalSpend / daysForProjection;
+  const avgSales = kpi.totalSales / daysForProjection;
+  const avgPlatformFee = totalPlatformFee / daysForProjection;
+  const avgProfit = avgRevenue - avgSpend;
+
+  const proj30 = {
+    revenue: avgRevenue * 30,
+    spend: avgSpend * 30,
+    platformFee: avgPlatformFee * 30,
+    profit: avgProfit * 30,
+    sales: avgSales * 30
+  };
+
+  /* --- b) Gap analysis --- */
+  const currentMetric = targetType === 'lucro' ? proj30.profit : proj30.revenue;
+  const pctAchieved = targetValue > 0 ? Math.min(currentMetric / targetValue, 2) : 0;
+  const gap = targetValue - currentMetric;
+  const multiplier = currentMetric > 0 ? targetValue / currentMetric : Infinity;
+
+  /* --- c) Creative audit --- */
+  const creativesWithSpend = byCreative.filter(c => c.spend > 0);
+  const avgRoas = creativesWithSpend.reduce((s,c) => s + c.spend, 0) > 0
+    ? creativesWithSpend.reduce((s,c) => s + c.revenue, 0) / creativesWithSpend.reduce((s,c) => s + c.spend, 0)
+    : 0;
+
+  const tiers = { winners: [], mediocre: [], losers: [] };
+  creativesWithSpend.forEach(c => {
+    const roas = c.spend > 0 ? c.revenue / c.spend : 0;
+    const obj = { ...c, roas };
+    if (roas > avgRoas && c.revenue > 0) tiers.winners.push(obj);
+    else if (roas >= 0.5 && c.revenue > 0) tiers.mediocre.push(obj);
+    else tiers.losers.push(obj);
+  });
+  tiers.winners.sort((a,b) => b.roas - a.roas);
+  tiers.mediocre.sort((a,b) => b.roas - a.roas);
+  tiers.losers.sort((a,b) => b.spend - a.spend);
+
+  const wastedSpend = tiers.losers.reduce((s,c) => s + c.spend, 0);
+  const winnerAvgRoas = tiers.winners.reduce((s,c) => s + c.spend, 0) > 0
+    ? tiers.winners.reduce((s,c) => s + c.revenue, 0) / tiers.winners.reduce((s,c) => s + c.spend, 0)
+    : avgRoas;
+  const reallocRevenue = wastedSpend * winnerAvgRoas;
+  const wastedMonthly = (wastedSpend / daysForProjection) * 30;
+  const reallocMonthly = (reallocRevenue / daysForProjection) * 30;
+
+  /* --- d) Day-of-week analysis --- */
+  const DOW_NAMES = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+  const dowStats = Array.from({length:7}, () => ({revenue:0, spend:0, sales:0, count:0}));
+  byDay.forEach(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const dow = dt.getDay();
+    dowStats[dow].revenue += d.revenue;
+    dowStats[dow].spend += d.spend;
+    const daySales = (d.salesPrincipal||0) + (d.salesOB1||0) + (d.salesOB2||0) + (d.salesOB3||0) + (d.salesOB4||0) + (d.salesUpsell1||0) + (d.salesUpsell2||0) + (d.salesDownsell1||0) + (d.salesOther||0);
+    dowStats[dow].sales += daySales;
+    dowStats[dow].count++;
+  });
+  dowStats.forEach(d => {
+    d.avgRevenue = d.count > 0 ? d.revenue / d.count : 0;
+    d.avgSales = d.count > 0 ? d.sales / d.count : 0;
+  });
+
+  const bestDow = dowStats.reduce((best, d, i) => d.avgRevenue > (dowStats[best]?.avgRevenue || 0) ? i : best, 0);
+  const worstDow = dowStats.reduce((worst, d, i) => (d.count > 0 && d.avgRevenue < (dowStats[worst]?.avgRevenue || Infinity)) ? i : worst, 0);
+
+  /* --- e) Source analysis --- */
+  const organicRevenue = bySource.filter(s => s.source !== 'Meta_Ads').reduce((sum,s) => sum + s.revenue, 0);
+  const organicSales = bySource.filter(s => s.source !== 'Meta_Ads').reduce((sum,s) => sum + s.sales, 0);
+  const organicPct = kpi.totalRevenue > 0 ? organicRevenue / kpi.totalRevenue : 0;
+  const organicProfit = organicRevenue;
+
+  /* --- f) Action plan --- */
+  const actions = [];
+
+  if (wastedSpend > 10) {
+    const loserNames = tiers.losers.map(c => c.name).slice(0,4).join(', ');
+    const monthlySave = wastedMonthly;
+    actions.push({
+      title: `Pausar criativos ineficientes`,
+      detail: `Pausar ${tiers.losers.length} criativo(s): ${loserNames}`,
+      impact: monthlySave,
+      type: 'save'
+    });
+  }
+
+  tiers.winners.slice(0,3).forEach(c => {
+    const currentMonthly = (c.spend / daysForProjection) * 30;
+    const scaleTarget = currentMonthly * 2.5;
+    const addedSpend = scaleTarget - currentMonthly;
+    const addedRevenue = addedSpend * c.roas;
+    const addedProfit = addedRevenue - addedSpend;
+    if (addedProfit > 0) {
+      actions.push({
+        title: `Escalar ${c.name}`,
+        detail: `Aumentar de ${fmtBRL(currentMonthly)}/mes para ${fmtBRL(scaleTarget)}/mes (ROAS ${c.roas.toFixed(2)})`,
+        impact: addedProfit,
+        type: 'add'
+      });
+    }
+  });
+
+  if (bestDow !== worstDow && dowStats[bestDow].avgRevenue > dowStats[worstDow].avgRevenue * 1.3) {
+    const shiftPct = 0.20;
+    const dailySpendAvg = kpi.totalSpend / daysForProjection;
+    const shiftAmount = dailySpendAvg * shiftPct;
+    const revGain = shiftAmount * (dowStats[bestDow].avgRevenue / (dowStats[bestDow].spend / Math.max(dowStats[bestDow].count,1) || 1));
+    const estMonthly = Math.abs(revGain) * 4;
+    actions.push({
+      title: `Concentrar budget em ${DOW_NAMES[bestDow]}`,
+      detail: `Realocar 20% do budget de ${DOW_NAMES[worstDow]} para ${DOW_NAMES[bestDow]} (melhor dia: ${fmtBRL(dowStats[bestDow].avgRevenue)} medio/dia)`,
+      impact: estMonthly > 0 ? estMonthly : 100,
+      type: 'add'
+    });
+  }
+
+  if (gap > proj30.profit * 0.5) {
+    actions.push({
+      title: 'Testar aumento de preco ou novo Order Bump',
+      detail: `Gap de ${fmtBRL(gap)} exige alavancas estruturais: testar preco +30% ou adicionar upsell de ticket alto`,
+      impact: gap * 0.3,
+      type: 'test'
+    });
+  }
+
+  actions.sort((a,b) => b.impact - a.impact);
+
+  return {
+    targetType, targetValue, totalPlatformFee,
+    proj30, currentMetric, pctAchieved, gap, multiplier,
+    tiers, wastedSpend, wastedMonthly, winnerAvgRoas, reallocMonthly,
+    dowStats, bestDow, worstDow, DOW_NAMES,
+    organicRevenue, organicSales, organicPct, organicProfit,
+    actions, daysForProjection, avgRoas, kpi
+  };
+}
+
+function renderInsights(ins) {
+  const sec = $('insightsSection');
+  const targetLabel = ins.targetType === 'lucro' ? 'Lucro do Projeto' : 'Faturamento Liquido';
+  const pctNum = (ins.pctAchieved * 100);
+  const pctClamped = Math.min(pctNum, 100);
+  const progressColor = pctNum >= 100 ? 'var(--success)' : pctNum >= 60 ? 'var(--warning)' : 'var(--danger)';
+  const gapClass = ins.gap <= 0 ? 'up' : 'down';
+  const gapText = ins.gap <= 0 ? 'Meta atingida na projecao atual!' : `Faltam ${fmtBRL(ins.gap)} para a meta`;
+
+  let html = `<p class="section-title" style="display:flex;align-items:center;gap:8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-04)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    Insights &amp; Escala — Meta: ${fmtBRL(ins.targetValue)} (${esc(targetLabel)})
+  </p>`;
+
+  /* Projection cards */
+  html += `<div class="ins-block"><div class="ins-block-title">Projecao Mensal (base: ${ins.daysForProjection} dias ativos)</div>
+  <div class="insights-grid">
+    <div class="insight-card"><div class="ic-label">Faturamento liq. /mes</div><div class="ic-value">${fmtBRL(ins.proj30.revenue)}</div><div class="ic-sub">${fmtBRL(ins.proj30.revenue/30)}/dia</div></div>
+    <div class="insight-card"><div class="ic-label">Investimento /mes</div><div class="ic-value">${fmtBRL(ins.proj30.spend)}</div><div class="ic-sub">${fmtBRL(ins.proj30.spend/30)}/dia</div></div>
+    <div class="insight-card"><div class="ic-label">Taxa plataforma /mes</div><div class="ic-value">${fmtBRL(ins.proj30.platformFee)}</div><div class="ic-sub">Deduzida do faturamento</div></div>
+    <div class="insight-card"><div class="ic-label">Lucro projetado /mes</div><div class="ic-value ${ins.proj30.profit >= 0 ? 'up' : 'down'}">${fmtBRL(ins.proj30.profit)}</div><div class="ic-sub">ROAS: ${ins.kpi.totalSpend > 0 ? (ins.kpi.totalRevenue/ins.kpi.totalSpend).toFixed(2) : '—'}</div></div>
+    <div class="insight-card"><div class="ic-label">Vendas /mes</div><div class="ic-value">${Math.round(ins.proj30.sales)}</div><div class="ic-sub">${(ins.proj30.sales/30).toFixed(1)}/dia</div></div>
+  </div></div>`;
+
+  /* Gap analysis */
+  html += `<div class="ins-block"><div class="ins-block-title">Gap Analysis — ${esc(targetLabel)}</div>
+  <div class="progress-label"><span>Projecao atual: ${fmtBRL(ins.currentMetric)}</span><span>Meta: ${fmtBRL(ins.targetValue)}</span></div>
+  <div class="progress-track"><div class="progress-fill" style="width:${pctClamped}%;background:${progressColor};">${pctNum.toFixed(0)}%</div></div>
+  <p style="font-size:13px;font-weight:600;" class="${gapClass}">${gapText}</p>
+  ${ins.gap > 0 ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Multiplicador necessario: <strong>${ins.multiplier.toFixed(2)}x</strong> o resultado atual</p>` : ''}
+  </div>`;
+
+  /* Organic contribution */
+  html += `<div class="ins-block"><div class="ins-block-title">Contribuicao Organica</div>
+  <div class="insights-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+    <div class="insight-card"><div class="ic-label">Revenue organico</div><div class="ic-value">${fmtBRL(ins.organicRevenue)}</div><div class="ic-sub">${(ins.organicPct*100).toFixed(1)}% do total</div></div>
+    <div class="insight-card"><div class="ic-label">Lucro organico /mes</div><div class="ic-value up">${fmtBRL((ins.organicProfit/ins.daysForProjection)*30)}</div><div class="ic-sub">Custo zero de aquisicao</div></div>
+    <div class="insight-card"><div class="ic-label">Vendas organicas</div><div class="ic-value">${ins.organicSales}</div><div class="ic-sub">${(ins.organicSales/ins.daysForProjection).toFixed(1)}/dia</div></div>
+  </div></div>`;
+
+  /* Creative audit */
+  html += `<div class="ins-block"><div class="ins-block-title">Auditoria de Criativos (ROAS medio: ${ins.avgRoas.toFixed(2)})</div>`;
+  if (ins.tiers.winners.length + ins.tiers.mediocre.length + ins.tiers.losers.length > 0) {
+    html += `<div class="overflow-x"><table style="font-size:12px;"><thead><tr><th>Criativo</th><th class="r">Invest.</th><th class="r">Revenue</th><th class="r">ROAS</th><th class="r">Vendas</th><th>Tier</th><th>Acao</th></tr></thead><tbody>`;
+    const renderRow = (c, tier, tierClass, action) =>
+      `<tr><td>${esc(c.name)}</td><td class="r">${fmtBRL(c.spend)}</td><td class="r">${fmtBRL(c.revenue)}</td><td class="r" style="color:${roasColor(c.roas)}">${c.roas.toFixed(2)}</td><td class="r">${c.sales}</td><td><span class="tier-tag ${tierClass}">${tier}</span></td><td style="font-size:11px;">${action}</td></tr>`;
+    ins.tiers.winners.forEach(c => { html += renderRow(c, 'Winner', 'tier-winner', 'Escalar 2-3x'); });
+    ins.tiers.mediocre.forEach(c => { html += renderRow(c, 'Otimizar', 'tier-mediocre', 'Testar variacao'); });
+    ins.tiers.losers.forEach(c => { html += renderRow(c, 'Pausar', 'tier-loser', 'Pausar ou recriar'); });
+    html += `</tbody></table></div>`;
+
+    if (ins.wastedSpend > 0) {
+      html += `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:12px;">
+        <div style="font-size:12px;background:rgba(252,113,72,.08);padding:8px 14px;border-radius:8px;border:1px solid rgba(252,113,72,.2);">
+          Spend desperdicado: <strong style="color:var(--danger);">${fmtBRL(ins.wastedSpend)}</strong> no periodo (${fmtBRL(ins.wastedMonthly)}/mes)
+        </div>
+        <div style="font-size:12px;background:rgba(88,212,23,.08);padding:8px 14px;border-radius:8px;border:1px solid rgba(88,212,23,.2);">
+          Se realocar para winners (ROAS ${ins.winnerAvgRoas.toFixed(2)}): +${fmtBRL(ins.reallocMonthly)}/mes em receita
+        </div>
+      </div>`;
+    }
+  } else {
+    html += `<p style="font-size:12px;color:var(--muted);">Sem dados de criativos suficientes. Use metodo de match "nome" na configuracao.</p>`;
+  }
+  html += `</div>`;
+
+  /* Day-of-week heatmap */
+  html += `<div class="ins-block"><div class="ins-block-title">Padrao Semanal</div><div class="dow-grid">`;
+  const maxDowRev = Math.max(...ins.dowStats.map(d => d.avgRevenue), 1);
+  for (let i = 0; i < 7; i++) {
+    const d = ins.dowStats[i];
+    const intensity = d.avgRevenue / maxDowRev;
+    const bg = i === ins.bestDow ? 'rgba(88,212,23,.18)' : i === ins.worstDow ? 'rgba(252,113,72,.12)' : `rgba(23,150,212,${(intensity * 0.2).toFixed(2)})`;
+    const border = i === ins.bestDow ? 'var(--success)' : i === ins.worstDow ? 'var(--danger)' : 'var(--border)';
+    html += `<div class="dow-cell" style="background:${bg};border-color:${border};">
+      <div class="dow-day">${ins.DOW_NAMES[i]}</div>
+      <div class="dow-val">${fmtBRL(d.avgRevenue)}</div>
+      <div class="dow-sub">${d.avgSales.toFixed(1)} vendas/dia</div>
+    </div>`;
+  }
+  html += `</div>`;
+  html += `<p style="font-size:11px;color:var(--muted);">
+    Melhor dia: <strong style="color:var(--success);">${ins.DOW_NAMES[ins.bestDow]}</strong> (${fmtBRL(ins.dowStats[ins.bestDow].avgRevenue)}/dia) &nbsp;|&nbsp;
+    Pior dia: <strong style="color:var(--danger);">${ins.DOW_NAMES[ins.worstDow]}</strong> (${fmtBRL(ins.dowStats[ins.worstDow].avgRevenue)}/dia)
+  </p></div>`;
+
+  /* Action plan */
+  if (ins.actions.length > 0) {
+    html += `<div class="ins-block"><div class="ins-block-title">Plano de Acao (por impacto estimado no lucro mensal)</div>
+    <ol class="action-list">`;
+    ins.actions.forEach(a => {
+      const typeClass = a.type === 'save' ? 'impact-save' : a.type === 'add' ? 'impact-add' : 'impact-test';
+      const typeLabel = a.type === 'save' ? 'Economia' : a.type === 'add' ? 'Receita' : 'Potencial';
+      html += `<li class="action-item">
+        <div class="action-body"><strong>${esc(a.title)}</strong><span>${esc(a.detail)}</span></div>
+        <div class="action-impact ${typeClass}">${typeLabel}: +${fmtBRL(a.impact)}/mes</div>
+      </li>`;
+    });
+    html += `</ol></div>`;
+  }
+
+  sec.innerHTML = html;
+  sec.style.display = '';
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderFooter(cfg) {
+  const now = new Date().toLocaleString('pt-BR');
+  $('footerText').innerHTML = `Tracking HighEnd — Dashboard Perpetuo Lang — Cliente: ${esc(cfg.clientName)}<br/>Fontes: Google Sheets (${esc(cfg.vendasSheet)} + ${esc(cfg.metaSheet)}) — Atualizado em ${now}`;
+}
+
+/* ============================================================
+   DAILY SALES BY OFFER TYPE (for stacked chart)
+   ============================================================ */
+function enrichDayWithOfferSales(byDay, vendas, offerMap) {
+  const dayMap = {};
+  byDay.forEach(d => {
+    dayMap[d.date] = d;
+    d.salesPrincipal = 0;
+    d.salesPrincipalMeta = 0;
+    d.salesOB1 = 0;
+    d.salesOB2 = 0;
+    d.salesOB3 = 0;
+    d.salesOB4 = 0;
+    d.salesUpsell1 = 0;
+    d.salesUpsell2 = 0;
+    d.salesDownsell1 = 0;
+    d.salesOther = 0;
+  });
+  vendas.forEach(v => {
+    const d = v._date; if (!d || !dayMap[d]) return;
+    const cat = getOfferCategoryForSale(v, offerMap);
+    if (cat === 'Produto Principal') {
+      dayMap[d].salesPrincipal++;
+      if (v._source === 'Meta_Ads') dayMap[d].salesPrincipalMeta++;
+    } else if (cat === 'Order Bump 1') dayMap[d].salesOB1++;
+    else if (cat === 'Order Bump 2') dayMap[d].salesOB2++;
+    else if (cat === 'Order Bump 3') dayMap[d].salesOB3++;
+    else if (cat === 'Order Bump 4') dayMap[d].salesOB4++;
+    else if (cat === 'Upsell 1') dayMap[d].salesUpsell1++;
+    else if (cat === 'Upsell 2') dayMap[d].salesUpsell2++;
+    else if (cat === 'Downsell 1') dayMap[d].salesDownsell1++;
+    else dayMap[d].salesOther++;
+  });
+}
+
+/* ============================================================
+   STATUS MESSAGE
+   ============================================================ */
+function showStatus(msg, type) {
+  const el = $('statusMsg');
+  el.className = 'status-msg ' + type;
+  el.textContent = msg;
+}
+
+function populateLaunchTagOptions(rawVendas) {
+  const sel = $('filterLaunchTag');
+  if (!sel) return;
+  const set = new Set();
+  rawVendas.forEach(row => {
+    const lt = String(row.launch_tag || '').trim();
+    if (lt) set.add(lt);
+  });
+  const tags = [...set].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+  const saved = String(getConfig().launchTagFilter || '').trim();
+  sel.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = '';
+  optAll.textContent = 'Todos';
+  sel.appendChild(optAll);
+  tags.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+  const match = tags.find(t => t.toLowerCase() === saved.toLowerCase());
+  sel.value = match !== undefined ? match : '';
+}
+
+/* ============================================================
+   MAIN FLOW
+   ============================================================ */
+async function loadAndRender() {
+  const cfg = readConfigFromUI();
+  if (!cfg.apiKey) { showStatus('Insira a API Key.', 'err'); return; }
+  if (!cfg.sheetId) { showStatus('Insira o Spreadsheet ID.', 'err'); return; }
+
+  saveConfig(cfg);
+  showStatus('Carregando dados...', 'loading');
+  $('btnRefresh').disabled = true;
+  $('btnSaveConfig').disabled = true;
+
+  try {
+    const [vRows, mRows] = await Promise.all([
+      fetchSheet(cfg.sheetId, cfg.vendasSheet, cfg.apiKey).then(rowsToObjects),
+      fetchSheet(cfg.sheetId, cfg.metaSheet, cfg.apiKey).then(rowsToObjects)
+    ]);
+    const rawVendas = vRows.map(normalizeLangVenda);
+    const rawMeta = mRows.map(normalizeLangMeta);
+
+    populateLaunchTagOptions(rawVendas);
+    const cfgLoaded = readConfigFromUI();
+    saveConfig(cfgLoaded);
+
+    showStatus(`Vendas: ${rawVendas.length} linhas | Meta: ${rawMeta.length} linhas. Processando...`, 'loading');
+
+    const data = processData(rawVendas, rawMeta, cfgLoaded);
+
+    renderOfferTable(data.offerNames, cfgLoaded.offerMap, data.vendas);
+    const finalCfg = { ...cfgLoaded, offerMap: readOfferMap() };
+    saveConfig(finalCfg);
+    const finalData = processData(rawVendas, rawMeta, finalCfg);
+
+    enrichDayWithOfferSales(finalData.byDay, finalData.vendas, finalCfg.offerMap);
+
+    renderKPIs(finalData.kpi);
+    renderFunnelKPIs(finalData.kpi);
+    renderCharts(finalData.byDay, finalData.kpi);
+    renderTableOffer(finalData.byOffer, finalData.kpi);
+    renderTableCampaign(finalData.byCampaign);
+    renderTableCreative(finalData.byCreative);
+    renderTableAdset(finalData.byAdset);
+    renderTableSource(finalData.bySource, finalData.kpi);
+    renderSplit(finalData.kpi, finalData.byCampaign, finalData.bySource);
+    renderFooter(finalCfg);
+
+    $('clientName').textContent = finalCfg.clientName;
+    const period = finalCfg.dateFrom || finalData.byDay[0]?.date || '?';
+    const periodEnd = finalCfg.dateTo || finalData.byDay[finalData.byDay.length - 1]?.date || '?';
+    $('headerMeta').innerHTML = `Periodo: ${period} a ${periodEnd} · ${fmtNum(finalData.vendas.length)} vendas filtradas`;
+    $('stickyUpdated').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR') + ' · Periodo: ' + period + ' a ' + periodEnd;
+
+    $('dashboardContent').style.display = '';
+    $('stickyDashTop').style.display = 'flex';
+    $('emptyState').style.display = 'none';
+    $('filterBar').style.display = '';
+    $('insightsBar').style.display = '';
+    $('viewTabs').style.display = '';
+    $('configPanel').classList.remove('open');
+
+    window._rawVendas = rawVendas;
+    window._rawMeta = rawMeta;
+    window._lastFinalData = finalData;
+
+    setDashboardView(activeDashboardView);
+
+    const d = finalData.diagnostics || {};
+    const rawCounts = d.statusCountsRaw || {};
+    const srcCounts = d.sourceCountsBeforeFilter || {};
+    const statusCompact = Object.keys(rawCounts).sort().map(k => `${k}:${rawCounts[k]}`).join(', ');
+    const srcCompact = Object.keys(srcCounts).sort().map(k => `${k}:${srcCounts[k]}`).join(', ');
+    showStatus(
+      `OK · status [${statusCompact || 'sem status'}] · fontes [${srcCompact || 'sem fontes'}] · após status: ${fmtNum(d.afterStatusFilter || 0)} · após data: ${fmtNum(d.afterDateFilter || 0)} · após LaunchTag: ${fmtNum(d.afterLaunchTagFilter ?? d.afterDateFilter ?? 0)} · após source: ${fmtNum(d.afterSourceFilter || 0)} · transacoes unicas: ${fmtNum(d.afterDistinctTx || finalData.vendas.length)}`,
+      'ok'
+    );
+  } catch (err) {
+    showStatus('Erro: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    $('btnRefresh').disabled = false;
+    $('btnSaveConfig').disabled = false;
+  }
+}
+
+async function refresh() {
+  if (!window._rawVendas) { await loadAndRender(); return; }
+  const cfg = readConfigFromUI();
+  saveConfig(cfg);
+  $('filterDateFrom').value = cfg.dateFrom;
+  $('filterDateTo').value = cfg.dateTo;
+  const finalData = processData(window._rawVendas, window._rawMeta, cfg);
+  enrichDayWithOfferSales(finalData.byDay, finalData.vendas, cfg.offerMap);
+  renderKPIs(finalData.kpi);
+  renderFunnelKPIs(finalData.kpi);
+  renderCharts(finalData.byDay, finalData.kpi);
+  renderTableOffer(finalData.byOffer, finalData.kpi);
+  renderTableCampaign(finalData.byCampaign);
+  renderTableCreative(finalData.byCreative);
+  renderTableAdset(finalData.byAdset);
+  renderTableSource(finalData.bySource, finalData.kpi);
+  renderSplit(finalData.kpi, finalData.byCampaign, finalData.bySource);
+  renderFooter(cfg);
+  $('clientName').textContent = cfg.clientName;
+  const period = cfg.dateFrom || finalData.byDay[0]?.date || '?';
+  const periodEnd = cfg.dateTo || finalData.byDay[finalData.byDay.length - 1]?.date || '?';
+  $('headerMeta').innerHTML = `Periodo: ${period} a ${periodEnd} · ${fmtNum(finalData.vendas.length)} vendas filtradas`;
+  $('stickyUpdated').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR') + ' · Periodo: ' + period + ' a ' + periodEnd;
+  window._lastFinalData = finalData;
+  if ($('insightsSection').style.display !== 'none') {
+    renderInsights(generateInsights(finalData, cfg));
+  }
+  setDashboardView(activeDashboardView);
+  showStatus('Filtros aplicados.', 'ok');
+}
+
+/* ============================================================
+   FILTER BAR HELPERS
+   ============================================================ */
+function fmtDateISO(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function setFilterDates(from, to) {
+  $('filterDateFrom').value = from;
+  $('filterDateTo').value = to;
+  $('cfgDateFrom').value = from;
+  $('cfgDateTo').value = to;
+}
+
+function clearQuickActive() {
+  document.querySelectorAll('.filter-bar .quick-btn').forEach(b => b.classList.remove('active'));
+}
+
+function applyQuickFilter(btnId) {
+  clearQuickActive();
+  $(btnId).classList.add('active');
+  const today = new Date();
+  let from, to;
+  if (btnId === 'btnToday') {
+    from = to = fmtDateISO(today);
+  } else if (btnId === 'btnYesterday') {
+    const y = new Date(today); y.setDate(y.getDate() - 1);
+    from = to = fmtDateISO(y);
+  } else if (btnId === 'btnLast7') {
+    const s = new Date(today); s.setDate(s.getDate() - 6);
+    from = fmtDateISO(s);
+    to = fmtDateISO(today);
+  } else if (btnId === 'btnThisMonth') {
+    from = fmtDateISO(new Date(today.getFullYear(), today.getMonth(), 1));
+    to = fmtDateISO(today);
+  }
+  setFilterDates(from, to);
+  refresh();
+}
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const cfg = getConfig();
+  populateConfigUI(cfg);
+  $('filterDateFrom').value = cfg.dateFrom;
+  $('filterDateTo').value = cfg.dateTo;
+
+  $('configToggle').addEventListener('click', () => $('configPanel').classList.toggle('open'));
+  $('cfgMatchMethod').addEventListener('change', toggleNameFields);
+  $('btnSaveConfig').addEventListener('click', loadAndRender);
+  $('btnRefresh').addEventListener('click', () => loadAndRender());
+  $('btnExportConfig').addEventListener('click', () => {
+    const cfg = readConfigFromUI();
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dashboard-perpetuo-lang-config.json';
+    a.click();
+  });
+
+  ['btnToday', 'btnYesterday', 'btnLast7', 'btnThisMonth'].forEach(id => {
+    $(id).addEventListener('click', () => applyQuickFilter(id));
+  });
+
+  $('btnClearFilter').addEventListener('click', () => {
+    clearQuickActive();
+    setFilterDates('', '');
+    if ($('filterLaunchTag')) $('filterLaunchTag').value = '';
+    refresh();
+  });
+
+  $('filterDateFrom').addEventListener('change', () => {
+    clearQuickActive();
+    $('cfgDateFrom').value = $('filterDateFrom').value;
+    refresh();
+  });
+  $('filterDateTo').addEventListener('change', () => {
+    clearQuickActive();
+    $('cfgDateTo').value = $('filterDateTo').value;
+    refresh();
+  });
+
+  if ($('filterLaunchTag')) {
+    $('filterLaunchTag').addEventListener('change', () => {
+      const c = readConfigFromUI();
+      saveConfig(c);
+      refresh();
+    });
+  }
+
+  /* Insights bar */
+  $('btnGenerateInsights').addEventListener('click', () => {
+    if (!window._lastFinalData) return;
+    const cfg = readConfigFromUI();
+    saveConfig(cfg);
+    const ins = generateInsights(window._lastFinalData, cfg);
+    renderInsights(ins);
+  });
+
+  ['insightsTargetType','insightsTargetValue'].forEach(id => {
+    $(id).addEventListener('change', () => {
+      const cfg = readConfigFromUI();
+      saveConfig(cfg);
+    });
+  });
+
+  $('tabMain').addEventListener('click', () => setDashboardView('main'));
+  $('tabFunnel').addEventListener('click', () => setDashboardView('funnel'));
+
+  $('funnelMetricToggles').addEventListener('change', () => {
+    const bar = $('funnelMetricToggles');
+    const any = [...bar.querySelectorAll('input[data-funnel-metric]')].some(i => i.checked);
+    if (!any) {
+      const ctr = bar.querySelector('input[data-funnel-metric="ctr"]');
+      if (ctr) ctr.checked = true;
+    }
+    if (activeDashboardView === 'funnel' && window._lastFinalData && window._lastFinalData.byDay) {
+      renderFunnelChart(window._lastFinalData.byDay);
+    }
+  });
+
+  if (cfg.apiKey) {
+    $('btnRefresh').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
