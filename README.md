@@ -26,7 +26,9 @@ O motor interno ainda usa os nomes do export Hubla / `metaads_daily`. Antes de `
 | `launch_tag` | `launch_tag`, `LaunchTag`, `Launch Tag`, etc. | normalizado em `normalizeLangVenda`; alimenta o filtro **LaunchTag** na barra do painel |
 | `approved_date` e `order_date` | `update_time` | só quando ambos canônicos vazios; não usa `create_time` |
 | `commission_plataform` | igual | KPI “Taxa plat.” (soma separada) |
-| `utm_*`, `status`, `offer_name` | igual | `utm_source` meta/fb/ig → `Meta_Ads` |
+| `utm_*`, `status`, `offer_name` | igual | `utm_source` vazio → **Não Rastreadas** na tabela de fontes |
+| `utm_source` → **Meta_Ads** | `metaads`, `meta_ads`, `ig`, `fb` | agregados como tráfego pago Meta Ads no match com campanhas |
+| `utm_source` → **instagram** | `instagram` (e variações não listadas acima) | permanece como fonte **instagram** (orgânico / não colapsado em Meta_Ads) |
 | `campaign_id` (match numérico) | `campaign_id` | só esta coluna (10+ dígitos) |
 
 | Canônico (motor) | Aba metaads (Lang) | Notas |
@@ -41,6 +43,7 @@ O motor interno ainda usa os nomes do export Hubla / `metaads_daily`. Antes de `
 | `campaign_name` | `Campanha` | maiúscula |
 | `ad_name` | `ad` | — |
 | `adset_name` | `Conjunto` | gasto e “Top conjuntos” por conjunto; match vendas: `utm_medium` × nome do conjunto (método nome) |
+| `launch_tag` | `launch_tag`, `LaunchTag`, `Launch Tag`, etc. | igual à aba de vendas; com **LaunchTag** selecionado no painel, o gasto Meta é filtrado por esta coluna. Sem coluna na aba Meta, o investimento pode ficar **zero** com filtro ativo até o export incluir a dimensão |
 
 ## Google Sheets
 

@@ -379,15 +379,6 @@
             <input type="date" id="cfgDateTo" />
           </div>
           <div class="config-field">
-            <label>Fontes</label>
-            <select id="cfgSources" multiple style="min-height:80px;">
-              <option value="Meta_Ads" selected>Meta_Ads</option>
-              <option value="bio" selected>bio</option>
-              <option value="manychat" selected>manychat</option>
-              <option value="hubla" selected>hubla</option>
-            </select>
-          </div>
-          <div class="config-field">
             <label>Status vendas</label>
             <select id="cfgStatus">
               <option value="paid">Apenas efetivadas (paid/approved/completed)</option>
@@ -615,7 +606,6 @@ function getConfig() {
     offerMap: saved.offerMap || { ...DEFAULT_OFFER_MAP },
     dateFrom: saved.dateFrom || '',
     dateTo: saved.dateTo || '',
-    sources: saved.sources || ['Meta_Ads','bio','manychat','hubla'],
     statusFilter: saved.statusFilter || 'paid',
     insightsTargetType: saved.insightsTargetType || 'lucro',
     insightsTargetValue: saved.insightsTargetValue || '10000',
@@ -636,17 +626,12 @@ function populateConfigUI(cfg) {
   $('cfgDateFrom').value = cfg.dateFrom;
   $('cfgDateTo').value = cfg.dateTo;
   $('cfgStatus').value = cfg.statusFilter;
-  const srcSel = $('cfgSources');
-  for (const opt of srcSel.options) opt.selected = cfg.sources.includes(opt.value);
   toggleNameFields();
   $('insightsTargetType').value = cfg.insightsTargetType || 'lucro';
   $('insightsTargetValue').value = cfg.insightsTargetValue || '10000';
 }
 
 function readConfigFromUI() {
-  const srcSel = $('cfgSources');
-  const sources = [];
-  for (const opt of srcSel.options) if (opt.selected) sources.push(opt.value);
   return {
     apiKey: $('cfgApiKey').value.trim(),
     sheetId: $('cfgSheetId').value.trim(),
@@ -660,7 +645,6 @@ function readConfigFromUI() {
     offerMap: readOfferMap(),
     dateFrom: $('cfgDateFrom').value,
     dateTo: $('cfgDateTo').value,
-    sources,
     statusFilter: $('cfgStatus').value,
     insightsTargetType: $('insightsTargetType').value,
     insightsTargetValue: $('insightsTargetValue').value,
@@ -770,10 +754,9 @@ function getOfferCategoryForSale(v, offerMap) {
   return normalizeOfferCategory(v.category);
 }
 
-/** utm_source da planilha → Meta_Ads para bater no filtro "Fontes" do painel */
-const LANG_UTM_SOURCE_AS_META_ADS = new Set([
-  'meta', 'metaads', 'facebook', 'fb', 'instagram', 'ig', 'meta_ads', 'meta ads', 'anuncios meta', 'anúncios meta', 'fbads'
-]);
+/** utm_source: metaads / meta_ads / ig / fb → Meta_Ads; instagram permanece instagram */
+/** utm_source → Meta_Ads apenas: metaads, meta_ads, ig, fb (Instagram orgânico fica como "instagram"). */
+const LANG_UTM_SOURCE_AS_META_ADS = new Set(['metaads', 'meta_ads', 'ig', 'fb']);
 
 function normalizeLangUtmSource(raw) {
   const s = String(raw || '').trim();
@@ -785,8 +768,8 @@ function normalizeLangUtmSource(raw) {
 function normalizeSource(raw) {
   const s = String(raw || '').trim();
   const low = s.toLowerCase();
-  if (!low) return 'desconhecido';
-  if (LANG_UTM_SOURCE_AS_META_ADS.has(low) || low === 'meta_ads' || low === 'meta ads') return 'Meta_Ads';
+  if (!low) return 'Não Rastreadas';
+  if (LANG_UTM_SOURCE_AS_META_ADS.has(low)) return 'Meta_Ads';
   if (low === 'bio') return 'bio';
   if (low === 'manychat') return 'manychat';
   if (low === 'hubla') return 'hubla';
@@ -844,6 +827,8 @@ function normalizeLangMeta(row) {
   if (sheetValEmpty(out.campaign_id) && !sheetValEmpty(row.campaign_id)) out.campaign_id = row.campaign_id;
   if (sheetValEmpty(out.campaign_name) && !sheetValEmpty(row.Campanha)) out.campaign_name = row.Campanha;
   if (sheetValEmpty(out.ad_name) && !sheetValEmpty(row.ad)) out.ad_name = row.ad;
+  const ltMeta = firstDefinedRow(row, ['launch_tag', 'LaunchTag', 'launchtag', 'Launch Tag', 'Launch_Tag']);
+  out.launch_tag = sheetValEmpty(ltMeta) ? '' : String(ltMeta).trim();
   return out;
 }
 
@@ -990,6 +975,9 @@ function processData(rawVendas, rawMeta, cfg) {
 
   if (cfg.dateFrom) meta = meta.filter(m => !m._date || m._date >= cfg.dateFrom);
   if (cfg.dateTo) meta = meta.filter(m => !m._date || m._date <= cfg.dateTo);
+  if (tagWant) {
+    meta = meta.filter(m => String(m.launch_tag || '').trim().toLowerCase() === tagWant);
+  }
 
   const offerNames = [...new Set(vendas.map(v => getOfferDisplayName(v)).filter(Boolean))];
 
@@ -1148,7 +1136,7 @@ function groupByCreative(vendas, meta, cfg) {
 function groupBySource(vendas) {
   const sources = {};
   vendas.forEach(v => {
-    const s = v._source || 'desconhecido';
+    const s = v._source || 'Não Rastreadas';
     if (!sources[s]) sources[s] = { source: s, sales: 0, revenue: 0 };
     sources[s].sales++;
     sources[s].revenue += v._netPrice;
